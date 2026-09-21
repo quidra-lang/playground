@@ -2,7 +2,9 @@ name: deploy
 
 on:
   push:
-    branches: [main]
+    # develop is where this repository advances, and the playground tracks
+    # Quidra Core's develop, so that is the branch the published site follows.
+    branches: [develop]
   workflow_dispatch:
 
 # The site is static: no backend, no secrets, nothing to configure at runtime.
