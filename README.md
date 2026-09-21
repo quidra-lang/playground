@@ -140,7 +140,14 @@ relatively, so the same build works at a domain root and under a subpath such
 as `/playground/`.
 
 `.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every
-push to `main`. There is no backend, no database and no secret to configure.
+push to `develop`, which is the branch this repository advances on. There is no
+backend, no database and no secret to configure.
+
+Pages has to be switched on once by a repository admin — Settings › Pages,
+source **GitHub Actions**. The workflow token is not allowed to create the site
+itself, so that step cannot be automated away.
+
+The published site is <https://quidra-lang.github.io/playground/>.
 
 ## What this is not
 
