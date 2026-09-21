@@ -139,9 +139,16 @@ the browser. The tests that need it are skipped when it is absent.
 relatively, so the same build works at a domain root and under a subpath such
 as `/playground/`.
 
-`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every
-push to `develop`, which is the branch this repository advances on. There is no
-backend, no database and no secret to configure.
+Work lands on `develop`. Publishing is a deliberate step: fast-forward `main`
+to `develop`, which is what `.github/workflows/deploy.yml` reacts to. That
+mirrors how Quidra Core releases, and the `github-pages` environment only
+permits the default branch to deploy anyway.
+
+```bash
+git checkout main && git merge --ff-only develop && git push origin main
+```
+
+There is no backend, no database and no secret to configure.
 
 Pages has to be switched on once by a repository admin — Settings › Pages,
 source **GitHub Actions**. The workflow token is not allowed to create the site

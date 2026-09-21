@@ -2,9 +2,10 @@ name: deploy
 
 on:
   push:
-    # develop is where this repository advances, and the playground tracks
-    # Quidra Core's develop, so that is the branch the published site follows.
-    branches: [develop]
+    # Work lands on develop; publishing is a deliberate fast-forward of main,
+    # matching how Quidra Core releases. It is also the only branch the
+    # github-pages environment allows to deploy by default.
+    branches: [main]
   workflow_dispatch:
 
 # The site is static: no backend, no secrets, nothing to configure at runtime.
