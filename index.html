@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quidra Playground</title>
+    <meta
+      name="description"
+      content="The Quidra compiler frontend, running in your browser. Check, format, lower to typed IR, inspect and patch Quidra source with no server."
+    />
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <a class="skip-link" href="#editor">Skip to the editor</a>
+
+    <header class="masthead">
+      <div class="masthead-title">
+        <h1>Quidra Playground</h1>
+        <p class="tagline" id="tagline">The Quidra compiler frontend, in your browser.</p>
+      </div>
+      <dl class="build-info" id="build-info" aria-label="Build information">
+        <div><dt>Playground</dt><dd id="info-playground-version">—</dd></div>
+        <div><dt>Core</dt><dd id="info-core">—</dd></div>
+        <div><dt>Language</dt><dd id="info-language">—</dd></div>
+      </dl>
+    </header>
+
+    <nav class="toolbar" aria-label="Compiler actions">
+      <button type="button" id="action-check" data-action="check">
+        Check <kbd>⌘⏎</kbd>
+      </button>
+      <button type="button" id="action-format" data-action="format">
+        Format <kbd>⇧⌥F</kbd>
+      </button>
+      <button type="button" id="action-ir" data-action="ir">IR</button>
+      <button type="button" id="action-inspect" data-action="inspect">Inspect</button>
+      <button type="button" id="action-patch" data-action="patch">Patch</button>
+      <span class="toolbar-spacer"></span>
+      <button type="button" id="action-reset" class="secondary">Reset source</button>
+    </nav>
+
+    <main class="panes">
+      <section class="pane pane-editor" aria-label="Source editor">
+        <h2 class="pane-heading">
+          <span id="filename">main.qui</span>
+          <span class="pane-note">single file · stays in this tab</span>
+        </h2>
+        <div id="editor" class="editor-host"></div>
+      </section>
+
+      <section class="pane pane-output" aria-label="Compiler output">
+        <div class="tabs" role="tablist" aria-label="Output views">
+          <button role="tab" id="tab-problems" aria-controls="panel-problems" aria-selected="true">
+            Problems <span class="badge" id="problem-count" aria-hidden="true">0</span>
+          </button>
+          <button role="tab" id="tab-ir" aria-controls="panel-ir" aria-selected="false" tabindex="-1">
+            IR
+          </button>
+          <button role="tab" id="tab-inspect" aria-controls="panel-inspect" aria-selected="false" tabindex="-1">
+            Inspect
+          </button>
+          <button role="tab" id="tab-patch" aria-controls="panel-patch" aria-selected="false" tabindex="-1">
+            Patch
+          </button>
+        </div>
+
+        <div class="tabpanels">
+          <div role="tabpanel" id="panel-problems" aria-labelledby="tab-problems" tabindex="0">
+            <ul class="diagnostics" id="diagnostics"></ul>
+            <p class="empty" id="diagnostics-empty">Press Check, or just start typing.</p>
+          </div>
+
+          <div role="tabpanel" id="panel-ir" aria-labelledby="tab-ir" tabindex="0" hidden>
+            <pre class="output-text" id="ir-output"></pre>
+            <p class="empty" id="ir-empty">Press IR to lower the program to typed Quidra IR.</p>
+          </div>
+
+          <div role="tabpanel" id="panel-inspect" aria-labelledby="tab-inspect" tabindex="0" hidden>
+            <pre class="output-text" id="inspect-output"></pre>
+            <p class="empty" id="inspect-empty">
+              Press Inspect to see the compiler's structural view of this source.
+            </p>
+          </div>
+
+          <div role="tabpanel" id="panel-patch" aria-labelledby="tab-patch" tabindex="0" hidden>
+            <p class="panel-intro">
+              A structured edit, keyed by node id and content hash. The compiler refuses a patch
+              whose result would not check, and refuses one built against an older revision, so
+              the source below is only ever replaced by something that compiles.
+            </p>
+            <label class="field-label" for="patch-input">Patch JSON</label>
+            <textarea
+              id="patch-input"
+              class="patch-input"
+              spellcheck="false"
+              rows="10"
+              placeholder='{"schema_version": 2, "base_revision": "...", "operations": [...]}'
+            ></textarea>
+            <div class="patch-actions">
+              <button type="button" id="action-patch-template" class="secondary">
+                Fill from Inspect
+              </button>
+              <button type="button" id="action-patch-apply">Apply patch</button>
+            </div>
+            <pre class="output-text" id="patch-output"></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <span class="status" id="status" role="status" aria-live="polite">Loading compiler…</span>
+      <span class="statusbar-spacer"></span>
+      <span class="note">
+        No Run button:
+        <span id="run-note">execution is intentionally not offered here.</span>
+      </span>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

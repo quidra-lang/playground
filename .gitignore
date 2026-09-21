@@ -1,0 +1,9 @@
+node_modules/
+dist/
+public/wasm/*
+!public/wasm/.gitkeep
+src/generated/build-info.ts
+src/generated/tokens.ts
+.core-build/
+.DS_Store
+*.log

@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.7
+          actions-cache-folder: emsdk-cache
+
+      - run: npm ci
+
+      # Checks out quidra-lang/quidra and builds the frontend to WebAssembly.
+      # The compiler is never vendored here and the artifact is never committed.
+      - name: Build the Quidra compiler frontend
+        run: npm run core:build
+
+      - name: Record the exact Core revision
+        run: |
+          node -e '
+            const meta = require("./.core-build/core-metadata.json");
+            console.log(`Core ${meta.coreVersion} @ ${meta.coreCommit} (ref ${meta.coreRef})`);
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      # The playground has no version of its own: this fails on any drift from
+      # the version project.toml declares.
+      - name: Version matches Quidra Core
+        run: npm run version:check
+
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx vite build
+
+      - name: The built page offers no way to execute a program
+        run: |
+          ! grep -riE 'id="action-run"' dist/index.html
+          grep -q 'No Run button' dist/index.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playground-dist
+          path: dist
+          retention-days: 7
