@@ -1,7 +1,7 @@
 {
   "name": "@quidra-lang/playground",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "The official Quidra Playground: the Quidra compiler frontend, running in the browser.",
   "license": "MIT",
