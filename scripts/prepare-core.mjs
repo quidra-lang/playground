@@ -73,7 +73,6 @@ function readCoreProjectValue(coreDir, key) {
 const coreDir = resolveCore();
 const coreCommit = capture("git", ["rev-parse", "HEAD"], coreDir);
 const coreVersion = readCoreProjectValue(coreDir, "version");
-const coreLanguageVersion = readCoreProjectValue(coreDir, "language_version");
 
 console.log(`Core ${coreVersion} @ ${coreCommit}`);
 
@@ -178,7 +177,7 @@ export const buildInfo: BuildInfo = {
 mkdirSync(workDir, { recursive: true });
 writeFileSync(
   join(workDir, "core-metadata.json"),
-  `${JSON.stringify({ coreVersion, coreLanguageVersion, coreCommit, coreRef }, null, 2)}\n`,
+  `${JSON.stringify({ coreVersion, coreCommit, coreRef }, null, 2)}\n`,
 );
 
 console.log(`Staged public/wasm/quidra-core.{js,wasm} from Core ${coreVersion} @ ${coreCommit}`);

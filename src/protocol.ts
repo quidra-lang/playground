@@ -145,7 +145,6 @@ export interface PatchSchemaResponse extends EnvelopeBase {
 
 export interface CoreMetadata {
   product_version: string;
-  language_version: string;
   ir_version: string;
   core_commit: string;
   wasm_schema_version: number;

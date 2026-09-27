@@ -69,7 +69,7 @@ const ui = {
   tagline: need<HTMLParagraphElement>("tagline"),
   playgroundVersion: need<HTMLElement>("info-playground-version"),
   core: need<HTMLElement>("info-core"),
-  language: need<HTMLElement>("info-language"),
+  formats: need<HTMLElement>("info-formats"),
   status: need<HTMLElement>("status"),
   diagnostics: need<HTMLUListElement>("diagnostics"),
   diagnosticsEmpty: need<HTMLParagraphElement>("diagnostics-empty"),
@@ -391,7 +391,7 @@ async function loadMetadata(): Promise<void> {
         ? ` · ui ${shortSha(buildInfo.playgroundCommit)}`
         : ""),
   );
-  setText(ui.language, `${metadata.language_version} · api v${metadata.wasm_schema_version}`);
+  setText(ui.formats, `ir v${metadata.ir_version} · api v${metadata.wasm_schema_version}`);
   ui.core.title = `Core commit ${metadata.core_commit}\nPlayground commit ${buildInfo.playgroundCommit}`;
   setText(ui.tagline, metadata.tagline);
   setText(ui.filename, metadata.default_filename || DEFAULT_FILENAME);
