@@ -29,8 +29,8 @@ The workflow captures Wrangler's structured deployment output and feeds the
 freshly deployed `workers.dev` URL directly into the page build. The repository
 variable `QUIDRA_RUNNER_URL` is optional and overrides that URL when an explicit
 HTTPS endpoint such as a custom domain is required. The page keeps Build/Run
-disabled until the selected endpoint reports the same language version and Core
-SHA as its WebAssembly frontend.
+disabled until the selected endpoint reports the same language version and Core SHA
+as its WebAssembly frontend.
 
 For a manual deployment:
 
