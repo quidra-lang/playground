@@ -163,8 +163,8 @@ A production Cloudflare Sandbox adapter is included in
 workflow builds that sandbox from the **same Core SHA** as the page and deploys
 it automatically. Its freshly deployed `workers.dev` URL is used automatically.
 Set `QUIDRA_RUNNER_URL` only when an explicit HTTPS endpoint such as a custom
-domain should override that URL. Build/Run still fail closed until the endpoint
-reports the same language version and Core SHA as the WebAssembly frontend.
+domain should override that URL. Build/Run still fail closed until the endpoint's
+reported language version and Core SHA match the WebAssembly frontend.
 
 The adapter creates one VM-isolated Sandbox per Build/Run, disables outbound
 Internet access, rate-limits execution, drops the Quidra process to an
