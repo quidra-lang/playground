@@ -12,6 +12,7 @@
 // Environment:
 //   QUIDRA_CORE_DIR  use an existing Core checkout instead of cloning
 //   QUIDRA_CORE_REF  branch, tag or SHA to check out (default: develop)
+ //                    Production explicitly sets this to Core main.
 
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

@@ -21,6 +21,11 @@ const lockManifest = JSON.parse(readFileSync(join(root, "package-lock.json"), "u
   packages: Record<string, { version?: string }>;
 };
 
+const deployWorkflow = readFileSync(
+  join(root, ".github", "workflows", "deploy.yml"),
+  "utf8",
+);
+
 describe("version synchronisation", () => {
   it("keeps package-lock root metadata aligned with package.json", () => {
     expect(lockManifest.version).toBe(manifest.version);
@@ -41,6 +46,15 @@ describe("version synchronisation", () => {
       coreCommit: string;
     };
     expect(coreCommit).toMatch(/^[0-9a-f]{40}$/);
+  });
+
+  it("builds production from released Core main rather than develop", () => {
+    expect(deployWorkflow).toMatch(
+      /Build the released Quidra compiler frontend[\s\S]*QUIDRA_CORE_REF: main[\s\S]*npm run core:build/,
+    );
+    expect(deployWorkflow).toMatch(
+      /Sync package metadata to released Core[\s\S]*npm run version:sync[\s\S]*Read the exact Core revision/,
+    );
   });
 
   it("does not hardcode a version anywhere in src/", () => {

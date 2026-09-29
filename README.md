@@ -89,10 +89,12 @@ per-request temporary directory and removes that directory after completion.
 The Playground has no independent language version. `project.toml` in Quidra
 Core remains the source of truth.
 
-At page build time, `scripts/prepare-core.mjs` records the exact Core SHA and
-builds the WebAssembly frontend from it. The deployment workflow builds the
-runner image from that **same SHA** and tags it both as `main` and
-`core-<sha>`.
+For development and CI, `scripts/prepare-core.mjs` follows Core `develop` by
+default. The production deployment explicitly resolves Core `main`, records
+that exact SHA, and derives npm's private package metadata from the released Core
+version in the deployment workspace. It then builds both the WebAssembly
+frontend and native runner from that **same resolved SHA**; the runner image is
+tagged both as `main` and `core-<sha>`.
 
 At runtime, the page compares both the language version and Core SHA reported by
 the WebAssembly module with `GET /v2/meta` from the runner. Build/Run stay
@@ -148,14 +150,17 @@ fast-forward of `main` to `develop`.
 
 The Pages workflow:
 
-1. builds the WebAssembly frontend from a resolved Core SHA;
-2. deploys the matching Cloudflare Sandbox runner when Cloudflare credentials
+1. resolves the released Quidra Core `main` revision and builds the WebAssembly
+   frontend from that exact SHA;
+2. derives npm's private package metadata from that released Core version in the
+   ephemeral deployment workspace;
+3. deploys the matching Cloudflare Sandbox runner when Cloudflare credentials
    are configured;
-3. resolves the page runner URL from Wrangler's structured deployment output,
+4. resolves the page runner URL from Wrangler's structured deployment output,
    unless the repository variable `QUIDRA_RUNNER_URL` explicitly overrides it;
-4. builds the page and publishes the matching
+5. builds the page and publishes the matching
    `ghcr.io/quidra-lang/playground-runner` image from that same Core SHA;
-5. deploys the static page to GitHub Pages.
+6. deploys the static page to GitHub Pages.
 
 A production Cloudflare Sandbox adapter is included in
 [`runner/cloudflare/`](runner/cloudflare/). When the repository has
