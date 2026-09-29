@@ -149,17 +149,22 @@ fast-forward of `main` to `develop`.
 The Pages workflow:
 
 1. builds the WebAssembly frontend from a resolved Core SHA;
-2. builds the page with the repository variable `QUIDRA_RUNNER_URL`;
-3. publishes `ghcr.io/quidra-lang/playground-runner` from that same Core SHA;
-4. deploys the static page to GitHub Pages.
+2. deploys the matching Cloudflare Sandbox runner when Cloudflare credentials
+   are configured;
+3. resolves the page runner URL from Wrangler's structured deployment output,
+   unless the repository variable `QUIDRA_RUNNER_URL` explicitly overrides it;
+4. builds the page and publishes the matching
+   `ghcr.io/quidra-lang/playground-runner` image from that same Core SHA;
+5. deploys the static page to GitHub Pages.
 
 A production Cloudflare Sandbox adapter is included in
 [`runner/cloudflare/`](runner/cloudflare/). When the repository has
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, the deploy
 workflow builds that sandbox from the **same Core SHA** as the page and deploys
-it automatically. Set `QUIDRA_RUNNER_URL` to the deployed Worker's HTTPS base
-URL. Build/Run still fail closed until its reported language version and Core
-SHA match the WebAssembly frontend.
+it automatically. Its freshly deployed `workers.dev` URL is used automatically.
+Set `QUIDRA_RUNNER_URL` only when an explicit HTTPS endpoint such as a custom
+domain should override that URL. Build/Run still fail closed until the endpoint
+reports the same language version and Core SHA as the WebAssembly frontend.
 
 The adapter creates one VM-isolated Sandbox per Build/Run, disables outbound
 Internet access, rate-limits execution, drops the Quidra process to an
