@@ -1,7 +1,7 @@
 {
   "name": "@quidra-lang/playground",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "The official Quidra Playground: browser tooling plus native Build/Run through the real Quidra compiler.",
   "license": "MIT",
