@@ -16,6 +16,11 @@ permissions:
   pages: write
   id-token: write
 
+# Production normally runs from Playground main, which therefore resolves Core
+# main. Manual dispatches keep the same branch-to-branch rule.
+env:
+  QUIDRA_CORE_REF: ${{ github.ref_name }}
+
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -34,14 +39,11 @@ jobs:
           version: 4.0.7
           actions-cache-folder: emsdk-cache
       - run: npm ci
-      - name: Build the released Quidra compiler frontend
-        env:
-          QUIDRA_CORE_REF: main
+      - name: Build the matching Quidra compiler frontend
         run: npm run core:build
-      # The repository itself follows Core develop. Production is built from the
-      # released Core main, so derive npm's private package metadata in this
+      # Derive private npm package metadata from the same Core branch in this
       # ephemeral workspace before the ordinary version check runs.
-      - name: Sync package metadata to released Core
+      - name: Sync package metadata to matching Core
         run: npm run version:sync
       - name: Read the exact Core revision used by the page
         id: core

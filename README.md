@@ -89,12 +89,13 @@ per-request temporary directory and removes that directory after completion.
 The Playground has no independent language version. `project.toml` in Quidra
 Core remains the source of truth.
 
-For development and CI, `scripts/prepare-core.mjs` follows Core `develop` by
-default. The production deployment explicitly resolves Core `main`, records
-that exact SHA, and derives npm's private package metadata from the released Core
-version in the deployment workspace. It then builds both the WebAssembly
-frontend and native runner from that **same resolved SHA**; the runner image is
-tagged both as `main` and `core-<sha>`.
+Branch identity is explicit: Playground `develop` resolves Core `develop`, and
+Playground `main` resolves Core `main`. CI uses the current Playground branch;
+pull requests use their target branch. The workflow records the exact resolved
+Core SHA and derives npm's private package metadata from that Core version in
+the ephemeral workspace. The WebAssembly frontend and native runner are then
+built from that **same resolved SHA**; the runner image is tagged both as `main`
+and `core-<sha>`.
 
 At runtime, the page compares both the language version and Core SHA reported by
 the WebAssembly module with `GET /v2/meta` from the runner. Build/Run stay
@@ -150,9 +151,10 @@ fast-forward of `main` to `develop`.
 
 The Pages workflow:
 
-1. resolves the released Quidra Core `main` revision and builds the WebAssembly
-   frontend from that exact SHA;
-2. derives npm's private package metadata from that released Core version in the
+1. resolves the Core branch with the same name as the Playground branch
+   (`main` in normal production) and builds the WebAssembly frontend from that
+   exact SHA;
+2. derives npm's private package metadata from that matching Core version in the
    ephemeral deployment workspace;
 3. deploys the matching Cloudflare Sandbox runner when Cloudflare credentials
    are configured;

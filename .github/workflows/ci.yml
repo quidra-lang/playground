@@ -8,6 +8,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# A Playground branch is validated against the same-named Core branch.
+# Pull requests validate against the branch they target rather than refs/pull/*.
+env:
+  QUIDRA_CORE_REF: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,10 +31,16 @@ jobs:
 
       - run: npm ci
 
-      # Checks out quidra-lang/quidra and builds the frontend to WebAssembly.
-      # The compiler is never vendored here and the artifact is never committed.
-      - name: Build the Quidra compiler frontend
+      # Checks out the same-named quidra-lang/quidra branch and builds the
+      # frontend to WebAssembly. The compiler is never vendored here.
+      - name: Build the matching Quidra compiler frontend
         run: npm run core:build
+
+      # package.json/package-lock.json are private npm metadata, not a second
+      # language-version source. Derive them from the selected Core checkout in
+      # the workflow workspace before checking consistency.
+      - name: Sync package metadata to matching Core
+        run: npm run version:sync
 
       - name: Record the exact Core revision
         run: |
@@ -38,8 +49,8 @@ jobs:
             console.log(`Core ${meta.coreVersion} @ ${meta.coreCommit} (ref ${meta.coreRef})`);
           ' >> "$GITHUB_STEP_SUMMARY"
 
-      # The playground has no version of its own: this fails on any drift from
-      # the version project.toml declares.
+      # The playground has no version of its own: after derivation, verify all
+      # npm metadata agrees with the selected Core project.toml.
       - name: Version matches Quidra Core
         run: npm run version:check
 

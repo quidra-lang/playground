@@ -21,6 +21,10 @@ const lockManifest = JSON.parse(readFileSync(join(root, "package-lock.json"), "u
   packages: Record<string, { version?: string }>;
 };
 
+const ciWorkflow = readFileSync(
+  join(root, ".github", "workflows", "ci.yml"),
+  "utf8",
+);
 const deployWorkflow = readFileSync(
   join(root, ".github", "workflows", "deploy.yml"),
   "utf8",
@@ -48,13 +52,18 @@ describe("version synchronisation", () => {
     expect(coreCommit).toMatch(/^[0-9a-f]{40}$/);
   });
 
-  it("builds production from released Core main rather than develop", () => {
-    expect(deployWorkflow).toMatch(
-      /Build the released Quidra compiler frontend[\s\S]*QUIDRA_CORE_REF: main[\s\S]*npm run core:build/,
+  it("maps Playground branches to the matching Core branches", () => {
+    expect(ciWorkflow).toContain(
+      "QUIDRA_CORE_REF: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}",
     );
-    expect(deployWorkflow).toMatch(
-      /Sync package metadata to released Core[\s\S]*npm run version:sync[\s\S]*Read the exact Core revision/,
+    expect(deployWorkflow).toContain(
+      "QUIDRA_CORE_REF: ${{ github.ref_name }}",
     );
+    for (const workflow of [ciWorkflow, deployWorkflow]) {
+      expect(workflow).toMatch(
+        /Build the matching Quidra compiler frontend[\s\S]*npm run core:build[\s\S]*Sync package metadata to matching Core[\s\S]*npm run version:sync/,
+      );
+    }
   });
 
   it("does not hardcode a version anywhere in src/", () => {
