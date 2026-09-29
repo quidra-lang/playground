@@ -1,0 +1,107 @@
+name: runner-smoke
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'runner/Dockerfile'
+      - 'runner/server.py'
+      - 'runner/limited_exec.py'
+      - '.github/workflows/runner-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runner-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the Core revision once
+        id: core
+        run: |
+          sha="$(git ls-remote https://github.com/quidra-lang/quidra.git refs/heads/develop | cut -f1)"
+          test -n "$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Core $sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the runner image from that exact Core revision
+        run: |
+          docker build \
+            -f runner/Dockerfile \
+            --build-arg QUIDRA_CORE_REF="${{ steps.core.outputs.sha }}" \
+            -t quidra-playground-runner:smoke \
+            .
+
+      - name: Start runner
+        run: |
+          docker run -d \
+            --name quidra-playground-runner-smoke \
+            -p 127.0.0.1:18080:8080 \
+            -e QUIDRA_PLAYGROUND_ORIGIN=http://localhost:5173 \
+            quidra-playground-runner:smoke
+
+      - name: Exercise metadata, Build and Run through HTTP
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "runner did not become healthy" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          version="$(docker exec quidra-playground-runner-smoke /opt/quidra/bin/quidra --version | awk '{print $2}')"
+          test -n "$version"
+
+          meta="$(curl -fsS \
+            -H 'Origin: http://localhost:5173' \
+            http://127.0.0.1:18080/v2/meta)"
+          echo "$meta" | jq -e \
+            --arg sha "${{ steps.core.outputs.sha }}" \
+            --arg version "$version" \
+            '.api_version == 2
+             and .version == $version
+             and .compiler_version == null
+             and .core_commit == $sha
+             and (.operations | index("build") != null)
+             and (.operations | index("run") != null)'
+
+          build="$(curl -fsS \
+            -H 'Origin: http://localhost:5173' \
+            -H 'Content-Type: application/json' \
+            --data '{"operation":"build","source":"print(\"PLAYGROUND-BUILD-OK\")\n"}' \
+            http://127.0.0.1:18080/v2/execute)"
+          echo "$build"
+          echo "$build" | jq -e --arg version "$version" \
+            '.ok == true and .operation == "build" and .exit_code == 0 and .version == $version'
+
+          run="$(curl -fsS \
+            -H 'Origin: http://localhost:5173' \
+            -H 'Content-Type: application/json' \
+            --data '{"operation":"run","source":"print(\"PLAYGROUND-RUNNER-OK\")\n"}' \
+            http://127.0.0.1:18080/v2/execute)"
+          echo "$run"
+          echo "$run" | jq -e --arg version "$version" \
+            '.ok == true
+             and .operation == "run"
+             and .exit_code == 0
+             and .version == $version
+             and (.stdout | contains("PLAYGROUND-RUNNER-OK"))'
+
+      - name: Runner logs
+        if: always()
+        run: docker logs quidra-playground-runner-smoke || true
+
+      - name: Stop runner
+        if: always()
+        run: docker rm -f quidra-playground-runner-smoke || true

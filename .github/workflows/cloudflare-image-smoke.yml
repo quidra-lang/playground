@@ -1,0 +1,77 @@
+name: cloudflare-image-smoke
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'runner/cloudflare/Dockerfile'
+      - 'runner/limited_exec.py'
+      - '.github/workflows/cloudflare-image-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-image-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the Core revision once
+        id: core
+        run: |
+          sha="$(git ls-remote https://github.com/quidra-lang/quidra.git refs/heads/develop | cut -f1)"
+          test -n "$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Core $sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the production Sandbox image from that exact Core revision
+        run: |
+          docker build \
+            -f runner/cloudflare/Dockerfile \
+            --build-arg QUIDRA_CORE_REF="${{ steps.core.outputs.sha }}" \
+            -t quidra-playground-cloudflare:smoke \
+            .
+
+      - name: Exercise privilege drop, Build and Run inside the image
+        run: |
+          docker run --rm \
+            --entrypoint /bin/bash \
+            quidra-playground-cloudflare:smoke \
+            -lc '
+              set -euo pipefail
+              test "$(cat /opt/quidra/share/quidra/core-commit)" = "${{ steps.core.outputs.sha }}"
+              test "$(env \
+                QUIDRA_RUNNER_UID=10001 \
+                QUIDRA_RUNNER_GID=10001 \
+                python3 /app/runner/limited_exec.py /usr/bin/id -u)" = "10001"
+
+              install -d -m 0770 -o 10001 -g 10001 /workspace/smoke
+              printf "%s\n" "print(\"CLOUDFLARE-IMAGE-OK\")" > /workspace/smoke/main.qui
+              chown 10001:10001 /workspace/smoke/main.qui
+
+              env -i \
+                PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+                HOME=/workspace/smoke TMPDIR=/workspace/smoke TMP=/workspace/smoke TEMP=/workspace/smoke \
+                LC_ALL=C.UTF-8 \
+                QUIDRA_CLANGXX=/usr/bin/clang++-15 QUIDRA_CLANG=/usr/bin/clang-15 QUIDRA_LLI=/usr/bin/lli-15 \
+                QUIDRA_RUNTIME_LIBRARY=/opt/quidra/lib/quidra/libquidra_runtime.a \
+                QUIDRA_JIT_RUNTIME_LIBRARY=/opt/quidra/lib/quidra/libquidra_runtime_jit.so \
+                QUIDRA_RUNNER_UID=10001 QUIDRA_RUNNER_GID=10001 \
+                python3 /app/runner/limited_exec.py \
+                  /opt/quidra/bin/quidra build /workspace/smoke/main.qui -o /workspace/smoke/program
+
+              test -x /workspace/smoke/program
+              output="$(env -i \
+                PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+                HOME=/workspace/smoke TMPDIR=/workspace/smoke TMP=/workspace/smoke TEMP=/workspace/smoke \
+                LC_ALL=C.UTF-8 \
+                QUIDRA_RUNNER_UID=10001 QUIDRA_RUNNER_GID=10001 \
+                python3 /app/runner/limited_exec.py /workspace/smoke/program)"
+              test "$output" = "CLOUDFLARE-IMAGE-OK"
+            '

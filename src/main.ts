@@ -1,17 +1,23 @@
 // Wires the page to the compiler.
 //
-// Two rules hold everywhere below. Compiler output is inserted as text, never
-// as markup, so nothing the compiler or the user writes can become DOM. And
-// the page never decides what a program means: every answer on screen came
-// back from the WebAssembly module.
+// Compiler and execution output is inserted as text, never as markup, so
+// nothing the compiler or the user writes can become DOM. Language semantics
+// come only from Quidra Core: local tooling uses the WebAssembly frontend, and
+// Build/Run delegates to a native runner built from the exact same Core commit.
 
 import type { EditorView } from "@codemirror/view";
 
 import { CompilerClient, type ClientStatus } from "./compiler-client";
+import {
+  ExecutionClient,
+  RUNNER_API_VERSION,
+  type ExecutionOperation,
+  type ExecutionResult,
+  type RunnerMetadata,
+} from "./execution-client";
 import { createEditor, replaceSource, revealRange, showDiagnostics, spanToRange } from "./editor";
 import { buildInfo } from "./generated/build-info";
 import {
-  DEFAULT_FILENAME,
   isOk,
   type CheckResponse,
   type CompilerResponse,
@@ -29,25 +35,11 @@ import "./styles.css";
 const STORAGE_KEY = "quidra-playground/source";
 
 const SAMPLE = `// Quidra: maximum meaning per token.
-// Every token below carries a fact the compiler enforces.
 
-int | none | error read_count(string text)
-    if text == ""
-        return none
-    return int.parse(text)
-
-// The axis slots are part of the type, so a wrong rank is a compile error,
-// not a runtime check you have to remember to write.
-float32 first_sample(const tensor<float32><3, _, _> &pixels)
-    return pixels[0, 0, 0].item()
-
-// '&' at the call site is where write authority becomes visible.
-void increment(int &value)
-    value += 1
-
-int count = 7
-increment(&count)
-print(count)
+string name = "Quidra"
+int answer = 6 * 7
+print("Hello, {name}")
+print("answer = {answer}")
 `;
 
 // --- tiny DOM helpers ------------------------------------------------------
@@ -80,11 +72,17 @@ const ui = {
   inspectEmpty: need<HTMLParagraphElement>("inspect-empty"),
   patchInput: need<HTMLTextAreaElement>("patch-input"),
   patchOutput: need<HTMLPreElement>("patch-output"),
+  executionOutput: need<HTMLPreElement>("execution-output"),
+  executionEmpty: need<HTMLParagraphElement>("execution-empty"),
+  executionMeta: need<HTMLParagraphElement>("execution-meta"),
+  executionNote: need<HTMLElement>("execution-note"),
+  buildButton: need<HTMLButtonElement>("action-build"),
+  runButton: need<HTMLButtonElement>("action-run"),
 };
 
 // --- tabs ------------------------------------------------------------------
 
-const TABS = ["problems", "ir", "inspect", "patch"] as const;
+const TABS = ["problems", "output", "ir", "inspect", "patch"] as const;
 type TabName = (typeof TABS)[number];
 
 function selectTab(name: TabName): void {
@@ -200,7 +198,11 @@ function reportFailure(response: CompilerResponse, context: string): void {
 // --- operations ------------------------------------------------------------
 
 let client: CompilerClient;
+const executionClient = ExecutionClient.fromEnvironment();
 let metadata: CoreMetadata | null = null;
+let runnerMetadata: RunnerMetadata | null = null;
+let executionReady = false;
+let executionBusy = false;
 let lastInspection: InspectionDocument | null = null;
 
 function source(): string {
@@ -283,6 +285,170 @@ async function runInspect(): Promise<void> {
     reportFailure(response, "Inspect");
   } catch (error) {
     setStatus(`Inspect failed: ${(error as Error).message}`, "error");
+  }
+}
+
+function syncExecutionButtons(): void {
+  const disabled = !executionReady || executionBusy;
+  ui.buildButton.disabled = disabled;
+  ui.runButton.disabled = disabled;
+}
+
+function setExecutionNote(message: string): void {
+  setText(ui.executionNote, message);
+}
+
+async function configureExecution(): Promise<void> {
+  executionReady = false;
+  runnerMetadata = null;
+  syncExecutionButtons();
+
+  if (!executionClient) {
+    setExecutionNote("Build/Run disabled: this deployment has no native runner configured.");
+    return;
+  }
+  if (!metadata) return;
+
+  setExecutionNote("Connecting to native runner…");
+  try {
+    const runner = await executionClient.metadata();
+    if (runner.api_version !== RUNNER_API_VERSION) {
+      throw new Error(
+        `runner API v${runner.api_version} does not match page API v${RUNNER_API_VERSION}`,
+      );
+    }
+    if (!runner.operations.includes("build") || !runner.operations.includes("run")) {
+      throw new Error("runner does not provide both Build and Run");
+    }
+    if (runner.version === "unknown" || runner.version !== metadata.version) {
+      throw new Error(
+        `Version mismatch: page ${metadata.version}, runner ${runner.version}`,
+      );
+    }
+    if (runner.core_commit === "unknown" || runner.core_commit !== metadata.core_commit) {
+      throw new Error(
+        `Core mismatch: page ${shortSha(metadata.core_commit)}, runner ${shortSha(runner.core_commit)}`,
+      );
+    }
+
+    runnerMetadata = runner;
+    executionReady = true;
+    syncExecutionButtons();
+    setExecutionNote(
+      `Native Build/Run ready · Quidra ${runner.version} · Core ${shortSha(runner.core_commit)} · source is uploaded only when you Build or Run.`,
+    );
+  } catch (error) {
+    setExecutionNote(`Build/Run unavailable: ${(error as Error).message}`);
+  }
+}
+
+async function checkBeforeExecution(operation: ExecutionOperation, program: string): Promise<boolean> {
+  try {
+    const response = await client.check(program);
+    if (isOk<CheckResponse>(response, "check")) {
+      renderDiagnostics(response.diagnostics, response.truncated);
+      if (response.valid) return true;
+      selectTab("problems");
+      setStatus(
+        `${operation === "build" ? "Build" : "Run"} blocked: fix the compiler errors first.`,
+        "error",
+      );
+      return false;
+    }
+    reportFailure(response, operation === "build" ? "Build" : "Run");
+  } catch (error) {
+    setStatus(
+      `${operation === "build" ? "Build" : "Run"} check failed: ${(error as Error).message}`,
+      "error",
+    );
+  }
+  return false;
+}
+
+function renderExecution(result: ExecutionResult): void {
+  ui.executionEmpty.hidden = true;
+  const chunks: string[] = [];
+  if (result.stdout) chunks.push(result.stdout.replace(/\s+$/, ""));
+  if (result.stderr) {
+    chunks.push(`[stderr]\n${result.stderr.replace(/\s+$/, "")}`);
+  }
+  if (result.stdout_truncated || result.stderr_truncated) {
+    chunks.push("[output truncated]");
+  }
+  setText(ui.executionOutput, chunks.join("\n\n") || "Completed with no output.");
+
+  const exit = result.exit_code === null ? "no exit code" : `exit ${result.exit_code}`;
+  setText(
+    ui.executionMeta,
+    `${result.operation} · ${exit} · ${result.elapsed_ms} ms · ${result.version}`,
+  );
+  selectTab("output");
+  setStatus(
+    result.timed_out
+      ? `${result.operation === "build" ? "Build" : "Run"} timed out.`
+      : result.ok
+        ? `${result.operation === "build" ? "Build" : "Run"} succeeded.`
+        : `${result.operation === "build" ? "Build" : "Run"} failed (${exit}).`,
+    result.ok ? "ok" : "error",
+  );
+}
+
+async function runNative(operation: ExecutionOperation): Promise<void> {
+  if (!executionClient || !metadata || !runnerMetadata || !executionReady || executionBusy) {
+    setStatus("Native Build/Run is not available in this deployment.", "error");
+    return;
+  }
+
+  const program = source();
+  const bytes = new TextEncoder().encode(program).length;
+  if (bytes > runnerMetadata.max_source_bytes) {
+    setStatus(
+      `Source is ${bytes} bytes; runner limit is ${runnerMetadata.max_source_bytes} bytes.`,
+      "error",
+    );
+    return;
+  }
+
+  executionBusy = true;
+  syncExecutionButtons();
+  try {
+    if (!(await checkBeforeExecution(operation, program))) return;
+    if (source() !== program) {
+      setStatus(
+        `${operation === "build" ? "Build" : "Run"} cancelled: source changed while checking; press again.`,
+        "error",
+      );
+      return;
+    }
+
+    selectTab("output");
+    ui.executionEmpty.hidden = true;
+    setText(ui.executionOutput, operation === "build" ? "Building…" : "Running…");
+    setText(ui.executionMeta, "");
+    setStatus(operation === "build" ? "Building with native Quidra…" : "Running with native Quidra…");
+
+    const result = await executionClient.execute(operation, program);
+    if (
+      result.api_version !== RUNNER_API_VERSION ||
+      result.version !== metadata.version ||
+      result.core_commit !== metadata.core_commit
+    ) {
+      executionReady = false;
+      setExecutionNote("Build/Run disabled: runner identity changed; reload after the runner is updated.");
+      throw new Error("runner identity changed during the request");
+    }
+    renderExecution(result);
+  } catch (error) {
+    setText(ui.executionOutput, "");
+    ui.executionEmpty.hidden = false;
+    setText(ui.executionMeta, "");
+    setStatus(
+      `${operation === "build" ? "Build" : "Run"} failed: ${(error as Error).message}`,
+      "error",
+    );
+  } finally {
+    executionBusy = false;
+    syncExecutionButtons();
   }
 }
 
@@ -383,10 +549,10 @@ async function loadMetadata(): Promise<void> {
 
   // The version on screen is the compiler's own answer. The playground has no
   // version of its own to display and never guesses one.
-  setText(ui.playgroundVersion, metadata.product_version);
+  setText(ui.playgroundVersion, metadata.version);
   setText(
     ui.core,
-    `${metadata.product_version} @ ${shortSha(metadata.core_commit)}` +
+    `${metadata.version} @ ${shortSha(metadata.core_commit)}` +
       (buildInfo.playgroundCommit !== "unknown"
         ? ` · ui ${shortSha(buildInfo.playgroundCommit)}`
         : ""),
@@ -394,8 +560,9 @@ async function loadMetadata(): Promise<void> {
   setText(ui.formats, `ir v${metadata.ir_version} · api v${metadata.wasm_schema_version}`);
   ui.core.title = `Core commit ${metadata.core_commit}\nPlayground commit ${buildInfo.playgroundCommit}`;
   setText(ui.tagline, metadata.tagline);
-  setText(ui.filename, metadata.default_filename || DEFAULT_FILENAME);
-  document.title = `Quidra Playground ${metadata.product_version}`;
+  setText(ui.filename, metadata.default_filename);
+  document.title = `Quidra Playground ${metadata.version}`;
+  void configureExecution();
 }
 
 // --- storage ---------------------------------------------------------------
@@ -461,6 +628,8 @@ function main(): void {
     },
   });
 
+  ui.runButton.addEventListener("click", () => void runNative("run"));
+  ui.buildButton.addEventListener("click", () => void runNative("build"));
   need<HTMLButtonElement>("action-check").addEventListener("click", () => void runCheck());
   need<HTMLButtonElement>("action-format").addEventListener("click", () => void runFormat());
   need<HTMLButtonElement>("action-ir").addEventListener("click", () => void runIr());
@@ -494,11 +663,13 @@ declare global {
   interface Window {
     __quidraPlayground?: {
       metadata: () => CoreMetadata | null;
+      runnerMetadata: () => RunnerMetadata | null;
       source: () => string;
     };
   }
 }
 window.__quidraPlayground = {
   metadata: () => metadata,
+  runnerMetadata: () => runnerMetadata,
   source: () => (editor ? editor.state.doc.toString() : ""),
 };

@@ -7,7 +7,6 @@
 // the user typed is lost.
 
 import {
-  DEFAULT_FILENAME,
   WASM_SCHEMA_VERSION,
   isStatusMessage,
   type CheckResponse,
@@ -123,7 +122,6 @@ export class CompilerClient {
     return this.send({
       schema_version: WASM_SCHEMA_VERSION,
       operation,
-      filename: DEFAULT_FILENAME,
       ...extra,
     });
   }

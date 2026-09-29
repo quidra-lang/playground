@@ -1,0 +1,15 @@
+{
+  "name": "@quidra-lang/playground-cloudflare-runner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy --config wrangler.deploy.json",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "0.12.10"
+  },
+  "devDependencies": {
+    "wrangler": "4.102.0"
+  }
+}

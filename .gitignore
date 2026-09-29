@@ -7,3 +7,6 @@ src/generated/tokens.ts
 .core-build/
 .DS_Store
 *.log
+runner/cloudflare/wrangler.deploy.json
+runner/cloudflare/node_modules/
+runner/cloudflare/.wrangler-dry-run/

@@ -6,7 +6,7 @@
     <title>Quidra Playground</title>
     <meta
       name="description"
-      content="The Quidra compiler frontend, running in your browser. Check, format, lower to typed IR, inspect and patch Quidra source with no server."
+      content="Write, check, build and run Quidra in the browser, using the real Quidra compiler frontend and native execution path."
     />
     <link rel="icon" href="data:," />
   </head>
@@ -26,6 +26,8 @@
     </header>
 
     <nav class="toolbar" aria-label="Compiler actions">
+      <button type="button" id="action-run" data-action="run" disabled>Run</button>
+      <button type="button" id="action-build" data-action="build" disabled>Build</button>
       <button type="button" id="action-check" data-action="check">
         Check <kbd>⌘⏎</kbd>
       </button>
@@ -42,8 +44,8 @@
     <main class="panes">
       <section class="pane pane-editor" aria-label="Source editor">
         <h2 class="pane-heading">
-          <span id="filename">main.qui</span>
-          <span class="pane-note">single file · stays in this tab</span>
+          <span id="filename">—</span>
+          <span class="pane-note">single file · local until Build/Run</span>
         </h2>
         <div id="editor" class="editor-host"></div>
       </section>
@@ -52,6 +54,9 @@
         <div class="tabs" role="tablist" aria-label="Output views">
           <button role="tab" id="tab-problems" aria-controls="panel-problems" aria-selected="true">
             Problems <span class="badge" id="problem-count" aria-hidden="true">0</span>
+          </button>
+          <button role="tab" id="tab-output" aria-controls="panel-output" aria-selected="false" tabindex="-1">
+            Output
           </button>
           <button role="tab" id="tab-ir" aria-controls="panel-ir" aria-selected="false" tabindex="-1">
             IR
@@ -68,6 +73,14 @@
           <div role="tabpanel" id="panel-problems" aria-labelledby="tab-problems" tabindex="0">
             <ul class="diagnostics" id="diagnostics"></ul>
             <p class="empty" id="diagnostics-empty">Press Check, or just start typing.</p>
+          </div>
+
+          <div role="tabpanel" id="panel-output" aria-labelledby="tab-output" tabindex="0" hidden>
+            <pre class="output-text" id="execution-output"></pre>
+            <p class="empty" id="execution-empty">
+              Build compiles with the native Quidra toolchain. Run compiles and executes the program.
+            </p>
+            <p class="execution-meta" id="execution-meta"></p>
           </div>
 
           <div role="tabpanel" id="panel-ir" aria-labelledby="tab-ir" tabindex="0" hidden>
@@ -111,9 +124,8 @@
     <footer class="statusbar">
       <span class="status" id="status" role="status" aria-live="polite">Loading compiler…</span>
       <span class="statusbar-spacer"></span>
-      <span class="note">
-        No Run button:
-        <span id="run-note">execution is intentionally not offered here.</span>
+      <span class="note" id="execution-note">
+        Build/Run unavailable until a matching native runner is connected.
       </span>
     </footer>
 

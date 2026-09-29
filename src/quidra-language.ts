@@ -19,16 +19,40 @@ const builtins = new Set(BUILTINS);
 const standardModules = new Set(STANDARD_MODULES);
 
 interface QuidraState {
-  /** Inside a `"""`-style block string, if the language grows one. */
   inString: boolean;
+  interpolationDepth: number;
+  interpolationString: boolean;
 }
 
-function readString(stream: StringStream): void {
-  let escaped = false;
+function readString(stream: StringStream, state: QuidraState): void {
   let next: string | void;
   while ((next = stream.next()) != null) {
-    if (!escaped && next === '"') return;
-    escaped = !escaped && next === "\\";
+    if (state.interpolationDepth === 0) {
+      if (next === '"') {
+        state.inString = false;
+        return;
+      }
+      if (next === "{" && stream.peek() === "{") {
+        stream.next();
+        continue;
+      }
+      if (next === "{") state.interpolationDepth = 1;
+      continue;
+    }
+
+    if (state.interpolationString) {
+      if (next === '"') state.interpolationString = false;
+      continue;
+    }
+    if (next === '"') {
+      state.interpolationString = true;
+      continue;
+    }
+    if (next === "{") {
+      state.interpolationDepth += 1;
+      continue;
+    }
+    if (next === "}") state.interpolationDepth -= 1;
   }
 }
 
@@ -36,10 +60,15 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
   name: "quidra",
 
   startState(): QuidraState {
-    return { inString: false };
+    return { inString: false, interpolationDepth: 0, interpolationString: false };
   },
 
-  token(stream, _state): string | null {
+  token(stream, state): string | null {
+    if (state.inString) {
+      readString(stream, state);
+      return "string";
+    }
+
     if (stream.eatSpace()) return null;
 
     // Comments run to end of line.
@@ -50,19 +79,26 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
 
     if (stream.peek() === '"') {
       stream.next();
-      readString(stream);
+      state.inString = true;
+      state.interpolationDepth = 0;
+      state.interpolationString = false;
+      readString(stream, state);
       return "string";
     }
 
     // Numbers. Quidra has no base prefixes, so decimal with an optional
     // fraction and exponent is the whole story.
     if (/[0-9]/.test(stream.peek() ?? "")) {
-      stream.eatWhile(/[0-9_]/);
+      let hasDecimalPoint = false;
+      stream.eatWhile(/[0-9]/);
       if (stream.peek() === "." && /[0-9]/.test(stream.string.charAt(stream.pos + 1))) {
+        hasDecimalPoint = true;
         stream.next();
-        stream.eatWhile(/[0-9_]/);
+        stream.eatWhile(/[0-9]/);
       }
-      if (stream.peek() === "e" || stream.peek() === "E") {
+      // Core accepts exponent notation only for a floating literal that already
+      // has an explicit decimal point (for example 1.0e8, not 1e8).
+      if (hasDecimalPoint && (stream.peek() === "e" || stream.peek() === "E")) {
         const save = stream.pos;
         stream.next();
         if (stream.peek() === "+" || stream.peek() === "-") stream.next();
@@ -95,7 +131,7 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
     if (stream.match(/^[+\-*/%=<>!]/)) return "operator";
     if (stream.match(/^[|]/)) return "punctuation";
     if (stream.match(/^[&]/)) return "punctuation";
-    if (stream.match(/^[(){}[\],:.]/)) return "punctuation";
+    if (stream.match(/^[()[\],:.;]/)) return "punctuation";
 
     stream.next();
     return null;

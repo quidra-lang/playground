@@ -1,0 +1,51 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "quidra-playground-runner",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "QUIDRA_PLAYGROUND_ORIGIN": "https://quidra-lang.github.io",
+    "QUIDRA_CORE_COMMIT": "unknown",
+    "QUIDRA_VERSION": "unknown"
+  },
+  "ratelimits": [
+    {
+      "name": "RUNNER_RATE_LIMIT",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    }
+  ],
+  "containers": [
+    {
+      "class_name": "Sandbox",
+      "image": "./Dockerfile",
+      "image_build_context": "../..",
+      "image_vars": {
+        "QUIDRA_CORE_REF": "develop"
+      },
+      "instance_type": "standard-1",
+      "max_instances": 4
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "Sandbox",
+        "name": "Sandbox"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["Sandbox"],
+      "tag": "v1"
+    }
+  ]
+}

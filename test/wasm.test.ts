@@ -65,14 +65,14 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
     expect(metadata.core_commit).toMatch(/^[0-9a-f]{40}$/);
   });
 
-  it("reports the same product version project.toml declares", () => {
+  it("reports the same Quidra version project.toml declares", () => {
     const metadataPath = join(root, ".core-build", "core-metadata.json");
     if (!existsSync(metadataPath)) return;
     const { coreVersion } = JSON.parse(readFileSync(metadataPath, "utf8")) as {
       coreVersion: string;
     };
     const response = invoke({ schema_version: WASM_SCHEMA_VERSION, operation: "metadata" });
-    expect((response as MetadataResponse).metadata.product_version).toBe(coreVersion);
+    expect((response as MetadataResponse).metadata.version).toBe(coreVersion);
   });
 
   it("checks a valid program", () => {

@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
 
       - uses: mymindstorm/setup-emsdk@v14
@@ -44,13 +44,43 @@ jobs:
         run: npm run version:check
 
       - run: npm run typecheck
+      - name: Validate Cloudflare runner source and exact-SHA config generation
+        run: |
+          node --check runner/cloudflare/src/index.js
+          QUIDRA_CORE_REF=0123456789abcdef0123456789abcdef01234567 \
+          QUIDRA_CORE_VERSION=0.test \
+          QUIDRA_PLAYGROUND_ORIGIN=https://quidra-lang.github.io \
+            node runner/cloudflare/scripts/configure.mjs
+          node -e '
+            const fs = require("fs");
+            const config = JSON.parse(fs.readFileSync("runner/cloudflare/wrangler.deploy.json", "utf8"));
+            const sha = "0123456789abcdef0123456789abcdef01234567";
+            if (config.vars.QUIDRA_CORE_COMMIT !== sha) process.exit(1);
+            if (config.containers[0].image_vars.QUIDRA_CORE_REF !== sha) process.exit(1);
+          '
+      - name: Bundle Cloudflare Sandbox worker with pinned Wrangler
+        working-directory: runner/cloudflare
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          node -e '
+            const fs = require("fs");
+            const config = JSON.parse(fs.readFileSync("wrangler.deploy.json", "utf8"));
+            config.containers[0].image =
+              "registry.cloudflare.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/quidra-playground-runner:ci";
+            delete config.containers[0].image_build_context;
+            delete config.containers[0].image_vars;
+            fs.writeFileSync("wrangler.ci.json", JSON.stringify(config, null, 2) + "\n");
+          '
+          npx wrangler deploy --dry-run --config wrangler.ci.json --outdir .wrangler-dry-run
       - run: npm test
+      - run: npm run test:runner
       - run: npx vite build
 
-      - name: The built page offers no way to execute a program
+      - name: The built page exposes native Build and Run controls
         run: |
-          ! grep -riE 'id="action-run"' dist/index.html
-          grep -q 'No Run button' dist/index.html
+          grep -q 'id="action-run"' dist/index.html
+          grep -q 'id="action-build"' dist/index.html
+          grep -q 'id="execution-output"' dist/index.html
 
       - uses: actions/upload-artifact@v4
         with:

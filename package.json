@@ -1,9 +1,9 @@
 {
   "name": "@quidra-lang/playground",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
-  "description": "The official Quidra Playground: the Quidra compiler frontend, running in the browser.",
+  "description": "The official Quidra Playground: browser tooling plus native Build/Run through the real Quidra compiler.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,6 +15,7 @@
     "version:check": "node scripts/sync-version.mjs --check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:runner": "python3 -m unittest -v runner.test_server",
     "dev": "vite",
     "build": "npm run version:check && tsc --noEmit && vite build",
     "preview": "vite preview"

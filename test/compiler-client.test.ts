@@ -93,16 +93,16 @@ describe("CompilerClient", () => {
     });
   });
 
-  it("sends the schema version and the virtual filename with each request", async () => {
+  it("lets Core choose the virtual filename from its own metadata contract", async () => {
     const { client, worker } = makeClient();
     void client.check("print(1)\n");
     const sent = worker.sent.at(-1);
     expect(sent && "request" in sent && sent.request).toMatchObject({
       schema_version: 1,
       operation: "check",
-      filename: "main.qui",
       source: "print(1)\n",
     });
+    expect(sent && "request" in sent && sent.request).not.toHaveProperty("filename");
   });
 
   it("keeps overlapping requests correlated by id", async () => {

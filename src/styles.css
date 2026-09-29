@@ -139,7 +139,7 @@ button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.secondary { color: var(--text-muted); }
 
-#action-check, #action-patch-apply {
+#action-run, #action-check, #action-patch-apply {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
@@ -374,3 +374,12 @@ kbd {
   .toolbar { gap: 6px; }
   kbd { display: none; }
 }
+
+
+.execution-meta {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.execution-meta:empty { display: none; }

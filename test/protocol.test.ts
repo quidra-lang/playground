@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DEFAULT_FILENAME,
   WASM_SCHEMA_VERSION,
   isInitMessage,
   isOk,
@@ -17,10 +16,6 @@ describe("envelope versioning", () => {
     // Bumping this is a protocol change: the worker, the bridge and this
     // constant move together, and the module reports its own value back.
     expect(WASM_SCHEMA_VERSION).toBe(1);
-  });
-
-  it("edits a single virtual file", () => {
-    expect(DEFAULT_FILENAME).toBe("main.qui");
   });
 });
 

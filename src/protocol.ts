@@ -6,13 +6,10 @@
 
 /**
  * Version of the request/response envelope, deliberately independent of the
- * Quidra product version. The compiler may reach 0.4.0 while this is still 1.
- * It must equal the `wasm_schema_version` the loaded module reports.
+ * Quidra language version. The language version may change independently while
+ * this remains 1. It must equal the `wasm_schema_version` the loaded module reports.
  */
 export const WASM_SCHEMA_VERSION = 1;
-
-/** The single virtual file the playground edits. */
-export const DEFAULT_FILENAME = "main.qui";
 
 export type Operation =
   | "check"
@@ -144,7 +141,7 @@ export interface PatchSchemaResponse extends EnvelopeBase {
 }
 
 export interface CoreMetadata {
-  product_version: string;
+  version: string;
   ir_version: string;
   core_commit: string;
   wasm_schema_version: number;

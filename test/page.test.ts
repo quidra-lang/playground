@@ -11,6 +11,9 @@ import { describe, expect, it } from "vitest";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
 const mainTs = readFileSync(join(root, "src", "main.ts"), "utf8");
+const languageTs = readFileSync(join(root, "src", "quidra-language.ts"), "utf8");
+const readme = readFileSync(join(root, "README.md"), "utf8");
+const cloudflareReadme = readFileSync(join(root, "runner", "cloudflare", "README.md"), "utf8");
 
 function idsIn(source: string): Set<string> {
   return new Set([...source.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]!));
@@ -36,29 +39,44 @@ describe("the page and the code agree", () => {
     expect(missing, "index.html is missing these ids").toEqual([]);
   });
 
-  it("offers exactly the five documented operations", () => {
-    for (const action of ["check", "format", "ir", "inspect", "patch"]) {
+  it("offers local tooling plus native Build and Run", () => {
+    for (const action of ["run", "build", "check", "format", "ir", "inspect", "patch"]) {
       expect(html).toContain(`id="action-${action}"`);
     }
+    expect(html).toContain('id="tab-output"');
+    expect(html).toContain('id="execution-output"');
+  });
+
+  it("does not hardcode Core's default source filename in the static page", () => {
+    expect(html).not.toContain("main.qui");
+    expect(mainTs).toContain("metadata.default_filename");
   });
 });
 
-describe("execution is not offered", () => {
-  it("has no Run control", () => {
-    // A Run button would mean a second execution engine with semantics that
-    // are not Quidra's. The absence is a product decision, so it is tested.
-    expect(html).not.toMatch(/id="action-run"/);
-    expect(html).not.toMatch(/>\s*Run\s*</);
-    expect(mainTs).not.toMatch(/\baction-run\b/);
+describe("native execution is explicit", () => {
+  it("keeps Build and Run disabled until the runner identity is verified", () => {
+    expect(html).toMatch(/id="action-run"[^>]*disabled/);
+    expect(html).toMatch(/id="action-build"[^>]*disabled/);
+    expect(mainTs).toMatch(/runner\.version !== metadata\.version/);
+    expect(mainTs).toMatch(/runner\.core_commit !== metadata\.core_commit/);
   });
 
-  it("says plainly that execution is excluded", () => {
-    expect(html).toMatch(/No Run button/i);
-  });
-
-  it("never asks the compiler to run anything", () => {
+  it("keeps execution out of the WebAssembly frontend protocol", () => {
     const protocol = readFileSync(join(root, "src", "protocol.ts"), "utf8");
     expect(protocol).not.toMatch(/"run"/);
+    expect(protocol).not.toMatch(/"build"/);
+  });
+
+  it("uses the dedicated execution client for native work", () => {
+    expect(mainTs).toMatch(/executionClient\.execute\(operation, program\)/);
+  });
+});
+
+describe("runner identity documentation matches runtime checks", () => {
+  it("documents both language version and Core revision as required identity", () => {
+    expect(readme).toMatch(/same\s+language version and exact same Core commit/);
+    expect(readme).toMatch(/reported language version and Core\s+SHA match/);
+    expect(cloudflareReadme).toMatch(/same language version and Core SHA/);
   });
 });
 
@@ -75,5 +93,27 @@ describe("compiler output never becomes markup", () => {
       const text = readFileSync(join(root, file), "utf8");
       expect(text, `${file} must not evaluate code`).not.toMatch(/\beval\(|new Function\(/);
     }
+  });
+});
+
+
+describe("syntax highlighting follows Core lexical contracts", () => {
+  it("does not invent numeric separators or integer exponent notation", () => {
+    expect(languageTs).not.toContain("[0-9_]");
+    expect(languageTs).toContain("let hasDecimalPoint = false");
+    expect(languageTs).toContain("hasDecimalPoint && (stream.peek() === \"e\" || stream.peek() === \"E\")");
+  });
+
+  it("tracks Core string boundaries across interpolation and line breaks", () => {
+    expect(languageTs).toContain("interpolationDepth");
+    expect(languageTs).toContain("interpolationString");
+    expect(languageTs).toContain('next === "{" && stream.peek() === "{"');
+    expect(languageTs).toContain("if (state.inString)");
+    expect(languageTs).not.toContain("escaped =");
+  });
+
+  it("highlights only source punctuation that Core actually tokenizes", () => {
+    expect(languageTs).toContain(':.;]');
+    expect(languageTs).not.toContain("{}");
   });
 });
