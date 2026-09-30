@@ -47,7 +47,7 @@ function invoke(request: Record<string, unknown>): CompilerResponse {
   }
 }
 
-const VALID = 'int add(int a, int b)\n    return a + b\n\nprint(add(2, 3))\n';
+const VALID = 'int add(int a, int b)\n    return a + b\n\nprint(add(2, 3))\nprint(NL)\n';
 
 describe.runIf(staged)("the real compiler, through the browser's own contract", () => {
   beforeAll(async () => {
@@ -214,7 +214,7 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
   });
 
   it("carries non-ASCII source across the boundary intact", () => {
-    const source = 'string s = "こんにちは 🌸"\nprint(s)\n';
+    const source = 'string s = "こんにちは 🌸"\nprint(s)\nprint(NL)\n';
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "format", source,
     }) as FormatResponse;

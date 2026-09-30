@@ -39,7 +39,9 @@ const SAMPLE = `// Quidra: maximum meaning per token.
 string name = "Quidra"
 int answer = 6 * 7
 print("Hello, {name}")
+print(NL)
 print("answer = {answer}")
+print(NL)
 `;
 
 // --- tiny DOM helpers ------------------------------------------------------

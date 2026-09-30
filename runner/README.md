@@ -94,7 +94,7 @@ as the public security boundary.
 `POST /v2/execute` accepts:
 
 ```json
-{"operation":"run","source":"print(42)\n","args":[]}
+{"operation":"run","source":"print(42)\nprint(NL)\n","args":[]}
 ```
 
 `operation` is `build` or `run`. `args` is optional and is accepted only for
