@@ -13,6 +13,7 @@
 //   QUIDRA_CORE_DIR  use an existing Core checkout instead of cloning
 //   QUIDRA_CORE_REF  branch, tag or SHA to check out (default: develop)
  //                    CI/deploy explicitly set the matching Playground branch.
+//   QUIDRA_BUILD_JOBS  parallel compile jobs of the Core build (default: 4)
 
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -22,6 +23,13 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workDir = join(root, ".core-build");
 const coreRef = process.env.QUIDRA_CORE_REF || "develop";
+// The Core build below uses CMake's default generator, Makefiles on the CI
+// runner, where --parallel without a count is an unlimited make -j that runs
+// the runner out of memory.
+const buildJobs = process.env.QUIDRA_BUILD_JOBS || "4";
+if (!/^[1-9][0-9]*$/.test(buildJobs)) {
+  throw new Error(`QUIDRA_BUILD_JOBS must be a positive integer, got '${buildJobs}'`);
+}
 const coreRepository = "https://github.com/quidra-lang/quidra.git";
 
 function run(command, args, options = {}) {
@@ -89,7 +97,7 @@ run("emcmake", [
   "-DCMAKE_BUILD_TYPE=Release",
   "-DQUIDRA_WARNINGS_AS_ERRORS=ON",
 ], { env: buildEnv });
-run("cmake", ["--build", buildDir, "--target", "quidra_wasm", "--parallel"], { env: buildEnv });
+run("cmake", ["--build", buildDir, "--target", "quidra_wasm", "--parallel", buildJobs], { env: buildEnv });
 
 const outDir = join(root, "public", "wasm");
 mkdirSync(outDir, { recursive: true });
@@ -117,7 +125,9 @@ function extractManifestLists(coreDir) {
   const manifest = JSON.parse(readFileSync(join(coreDir, "quidra.manifest.json"), "utf8"));
   const clean = (entries) =>
     [...new Set((entries ?? []).map((entry) => String(entry).split(" ")[0].trim()).filter(Boolean))];
-  const types = clean(manifest.current_types);
+  const types = clean(manifest.current_types).map((type) =>
+    /^(?:func|fn)</.test(type) ? type.slice(0, type.indexOf("<")) : type,
+  );
   const builtins = clean(manifest.current_builtins);
   const modules = clean(manifest.standard_modules);
   if (types.length === 0 || builtins.length === 0 || modules.length === 0) {

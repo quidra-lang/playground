@@ -105,6 +105,12 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
         if (/[0-9]/.test(stream.peek() ?? "")) stream.eatWhile(/[0-9]/);
         else stream.pos = save;
       }
+      // Imaginary literals extend real literals only: 2.0i is valid,
+      // whereas 2i is not. Do not swallow the start of an identifier.
+      if (hasDecimalPoint && stream.peek() === "i" &&
+          !/[A-Za-z0-9_]/.test(stream.string.charAt(stream.pos + 1))) {
+        stream.next();
+      }
       return "number";
     }
 
@@ -126,12 +132,16 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
       return "variableName";
     }
 
+    // Slice boundary markers are punctuation only when adjacent to ':'.
+    // Else '<' and '>' remain ordinary comparisons.
+    if (stream.match(/^([<>]:|:[<>])/)) return "punctuation";
+
     // Operators that carry one stable job each.
     if (stream.match(/^(==|!=|<=|>=|\+=|-=|\*=|\/=|%=|<<|>>)/)) return "operator";
     if (stream.match(/^[+\-*/%^=<>]/)) return "operator";
     if (stream.match(/^[|]/)) return "punctuation";
     if (stream.match(/^[&]/)) return "punctuation";
-    if (stream.match(/^[()[\],:.;]/)) return "punctuation";
+    if (stream.match(/^[()[\]{},:.;]/)) return "punctuation";
 
     stream.next();
     return null;

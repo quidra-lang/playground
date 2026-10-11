@@ -18,6 +18,30 @@ implemented by the frontend alone:
 
 There is still no second Quidra interpreter in this repository.
 
+## Class initialization
+
+A class definition includes its creation arguments, even when the list is empty.
+Ordinary header arguments become fields. A `local` argument is used only during
+initialization; direct field assignments run in source order for each new value.
+Methods use bare member names. The optional self name gives an explicit name to
+the whole instance, while a typed method named `construct` is an ordinary method.
+
+```quidra
+class Point(int x, int y, local int scale = 2)
+    x = x * scale
+    y = y * scale
+
+    int sum()
+        return x + y
+
+Point point = Point(3, 4)
+print(point.sum())
+print(NL)
+```
+
+The editor's keyword list is regenerated from the same Core revision as its
+WebAssembly frontend; class headers are interpreted by that frontend.
+
 ## Build and Run
 
 Build/Run are intentionally separate from the WebAssembly frontend. Quidra's

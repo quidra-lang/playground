@@ -104,6 +104,11 @@ describe("syntax highlighting follows Core lexical contracts", () => {
     expect(languageTs).toContain("hasDecimalPoint && (stream.peek() === \"e\" || stream.peek() === \"E\")");
   });
 
+  it("recognizes imaginary literals without accepting integer-imaginary shorthand", () => {
+    expect(languageTs).toContain('hasDecimalPoint && stream.peek() === "i"');
+    expect(languageTs).toContain('!/[A-Za-z0-9_]/.test(stream.string.charAt(stream.pos + 1))');
+  });
+
   it("tracks Core string boundaries across interpolation and line breaks", () => {
     expect(languageTs).toContain("interpolationDepth");
     expect(languageTs).toContain("interpolationString");
@@ -112,8 +117,13 @@ describe("syntax highlighting follows Core lexical contracts", () => {
     expect(languageTs).not.toContain("escaped =");
   });
 
+  it("keeps adjacent exclusive slice markers separate from comparisons", () => {
+    expect(languageTs).toContain('stream.match(/^([<>]:|:[<>])/');
+    expect(languageTs).toContain('stream.match(/^[+\\-*/%^=<>]/)');
+  });
+
   it("highlights only source punctuation that Core actually tokenizes", () => {
-    expect(languageTs).toContain(':.;]');
-    expect(languageTs).not.toContain("{}");
+    // Brace-shaped tensor types use the same punctuation tokens as Core.
+    expect(languageTs).toContain('stream.match(/^[()[\\]{},:.;]/)) return "punctuation";');
   });
 });
