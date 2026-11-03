@@ -262,7 +262,7 @@ print.line(tags.size())
   });
 
   it("carries non-ASCII source across the boundary intact", () => {
-    const source = 'string s := "こんにちは 🌸"\nprint.line(s)\n';
+    const source = 's := "こんにちは 🌸"\nprint.line(s)\n';
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "format", source,
     }) as FormatResponse;
