@@ -47,12 +47,18 @@ function invoke(request: Record<string, unknown>): CompilerResponse {
   }
 }
 
-const VALID = `int add(int a, b := int(3))
+const VALID = `int add(int a, int b := 3)
     return a + b
+
+string greet(label := "hello")
+    return label
 
 answer := add(2)
 answer = add(answer, b = 1)
 print.line(answer)
+print.line(greet())
+
+tensor<real32>{nat H, W := H * 2} image := tensor.zeros([32, 64])
 `;
 
 describe.runIf(staged)("the real compiler, through the browser's own contract", () => {

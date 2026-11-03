@@ -22,6 +22,9 @@ On `develop`, omit the type by default when the initializer determines it, as in
 `name := "Quidra"`. Use an explicit type when context is needed, as in
 `int count := 3`. Use `count = 4` to assign to the existing binding.
 
+In a tensor shape, `nat H` captures an extent and `W := H * 2` derives
+another extent from it.
+
 ## Class initialization
 
 A class definition includes its creation arguments, even when the list is empty.
