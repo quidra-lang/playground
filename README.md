@@ -18,9 +18,9 @@ implemented by the frontend alone:
 
 There is still no second Quidra interpreter in this repository.
 
-On `develop`, `int count := 3` declares a binding with an explicit type and
-`name := "Quidra"` declares one with an inferred static type. Use `count = 4`
-to assign to the existing binding.
+On `develop`, omit the type by default when the initializer determines it, as in
+`name := "Quidra"`. Use an explicit type when context is needed, as in
+`int count := 3`. Use `count = 4` to assign to the existing binding.
 
 ## Class initialization
 
@@ -40,7 +40,7 @@ class Point(int x, int y, local int scale := 2)
     int sum()
         return x + y
 
-Point point := Point(3, 4)
+point := Point(3, 4)
 print.line(point.sum())
 ```
 
