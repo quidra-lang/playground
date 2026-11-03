@@ -56,14 +56,14 @@ describe("ExecutionClient", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const client = new ExecutionClient("https://runner.example/");
-    const result = await client.execute("run", "print(42)\nprint(NL)\n");
+    const result = await client.execute("run", "print.line(42)\n");
 
     expect(result.stdout).toBe("42\n");
     const [, init] = fetchMock.mock.calls[0]!;
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({
       operation: "run",
-      source: "print(42)\nprint(NL)\n",
+      source: "print.line(42)\n",
       args: [],
     });
   });
@@ -94,7 +94,7 @@ describe("ExecutionClient", () => {
     );
 
     const client = new ExecutionClient("https://runner.example");
-    await client.execute("run", "print(42)\nprint(NL)\n");
+    await client.execute("run", "print.line(42)\n");
 
     expect(timeoutSpy).toHaveBeenCalledWith(expect.any(Function), 45_000);
   });

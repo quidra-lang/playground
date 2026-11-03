@@ -35,12 +35,34 @@ class Point(int x, int y, local int scale = 2)
         return x + y
 
 Point point = Point(3, 4)
-print(point.sum())
-print(NL)
+print.line(point.sum())
 ```
 
 The editor's keyword list is regenerated from the same Core revision as its
 WebAssembly frontend; class headers are interpreted by that frontend.
+
+## Collections on develop
+
+The Playground's `develop` build uses the matching Core `develop` syntax.
+Use `map<K, V>` for key/value associations and `distinct<T>` for unique
+values, without an explicit constructor for an empty collection:
+
+```quidra
+map<string, int> counts
+.counts.set("apple", 2)
+
+distinct<string> tags
+.tags.add("apple")
+.tags.add("apple")
+print.line(counts.has("apple"))
+print.line(tags.size())
+```
+
+The map method `.counts.set(...)` does not reserve the name `set` for
+user-defined functions. The old `set<T>` and `set.Set<T>` collection
+spellings are no longer supported on `develop`. The editor obtains its
+built-in names and standard namespaces from the exact Core commit it loads;
+`set` is no longer a reserved namespace.
 
 ## Build and Run
 

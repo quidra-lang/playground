@@ -13,6 +13,9 @@ const html = readFileSync(join(root, "index.html"), "utf8");
 const mainTs = readFileSync(join(root, "src", "main.ts"), "utf8");
 const languageTs = readFileSync(join(root, "src", "quidra-language.ts"), "utf8");
 const readme = readFileSync(join(root, "README.md"), "utf8");
+const wasmTests = readFileSync(join(root, "test", "wasm.test.ts"), "utf8");
+const executionClientTests = readFileSync(join(root, "test", "execution-client.test.ts"), "utf8");
+const runnerReadme = readFileSync(join(root, "runner", "README.md"), "utf8");
 const cloudflareReadme = readFileSync(join(root, "runner", "cloudflare", "README.md"), "utf8");
 
 function idsIn(source: string): Set<string> {
@@ -50,6 +53,18 @@ describe("the page and the code agree", () => {
   it("does not hardcode Core's default source filename in the static page", () => {
     expect(html).not.toContain("main.qui");
     expect(mainTs).toContain("metadata.default_filename");
+  });
+});
+
+describe("the bundled example follows Core line output syntax", () => {
+  it("uses print.line rather than explicit newline calls", () => {
+    expect(mainTs).toContain('print.line("Hello, {name}")');
+    expect(mainTs).toContain('print.line("answer = {answer}")');
+    expect(mainTs).not.toContain("print(NL)");
+    expect(readme).not.toContain("print(NL)");
+    expect(wasmTests).not.toContain("print(NL)");
+    expect(executionClientTests).not.toContain("print(NL)");
+    expect(runnerReadme).not.toContain("print(NL)");
   });
 });
 
@@ -120,6 +135,12 @@ describe("syntax highlighting follows Core lexical contracts", () => {
   it("keeps adjacent exclusive slice markers separate from comparisons", () => {
     expect(languageTs).toContain('stream.match(/^([<>]:|:[<>])/');
     expect(languageTs).toContain('stream.match(/^[+\\-*/%^=<>]/)');
+  });
+
+  it("distinguishes collection types and standard namespaces with optional whitespace", () => {
+    expect(languageTs).toContain('stream.match(/^\\s*</, false)');
+    expect(languageTs).toContain('stream.match(/^\\s*\\./, false)');
+    expect(languageTs).not.toContain('stream.peek() === "<"');
   });
 
   it("highlights only source punctuation that Core actually tokenizes", () => {

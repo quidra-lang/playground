@@ -47,7 +47,7 @@ function invoke(request: Record<string, unknown>): CompilerResponse {
   }
 }
 
-const VALID = 'int add(int a, int b)\n    return a + b\n\nprint(add(2, 3))\nprint(NL)\n';
+const VALID = 'int add(int a, int b)\n    return a + b\n\nprint.line(add(2, 3))\n';
 
 describe.runIf(staged)("the real compiler, through the browser's own contract", () => {
   beforeAll(async () => {
@@ -78,6 +78,42 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
   it("checks a valid program", () => {
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "check", source: VALID,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it("accepts concise collection types alongside a user-defined set function", () => {
+    const source = `int set(int value)
+    return value + 1
+
+map<string, int> counts
+.counts.set("apple", set(2))
+distinct<string> tags
+.tags.add("apple")
+.tags.add("apple")
+print.line(counts.has("apple"))
+print.line(tags.size())
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it("accepts whitespace around collection generic type delimiters", () => {
+    const source = `map <string, int> counts
+.counts.set("apple", 1)
+distinct <string> tags
+.tags.add("apple")
+print.line(counts.has("apple"))
+print.line(tags.size())
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
     }) as CheckResponse;
     expect(response.ok).toBe(true);
     expect(response.valid).toBe(true);
@@ -214,7 +250,7 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
   });
 
   it("carries non-ASCII source across the boundary intact", () => {
-    const source = 'string s = "こんにちは 🌸"\nprint(s)\nprint(NL)\n';
+    const source = 'string s = "こんにちは 🌸"\nprint.line(s)\n';
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "format", source,
     }) as FormatResponse;

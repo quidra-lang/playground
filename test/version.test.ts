@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const metadataPath = join(root, ".core-build", "core-metadata.json");
 const hasCoreMetadata = existsSync(metadataPath);
+const generatedTokensPath = join(root, "src", "generated", "tokens.ts");
 
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
   version: string;
@@ -64,6 +65,21 @@ describe("version synchronisation", () => {
         /Build the matching Quidra compiler frontend[\s\S]*npm run core:build[\s\S]*Sync package metadata to matching Core[\s\S]*npm run version:sync/,
       );
     }
+  });
+
+  it.runIf(existsSync(generatedTokensPath))("derives collection type and namespace names from Core", () => {
+    const source = readFileSync(generatedTokensPath, "utf8");
+    const typesJson = /export const TYPE_NAMES: readonly string\[\] = (.+);/.exec(source)?.[1];
+    const modulesJson = /export const STANDARD_MODULES: readonly string\[\] = (.+);/.exec(source)?.[1];
+    expect(typesJson).toBeDefined();
+    expect(modulesJson).toBeDefined();
+    const types = JSON.parse(typesJson!) as string[];
+    const modules = JSON.parse(modulesJson!) as string[];
+    expect(types).toContain("map");
+    expect(types).toContain("distinct");
+    expect(modules).toContain("map");
+    expect(modules).toContain("distinct");
+    expect(modules).not.toContain("set");
   });
 
   it("does not hardcode a version anywhere in src/", () => {

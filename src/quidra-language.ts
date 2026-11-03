@@ -123,9 +123,12 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
       // as operators, not as the boolean keywords they shadow in lowercase.
       if (word === word.toUpperCase() && keywords.has(word)) return "operator";
       if (keywords.has(word)) return "keyword";
+      // The collection names are both generic types and standard namespaces.
+      // Whitespace before < or . does not change their meaning.
+      if ((word === "map" || word === "distinct") && stream.match(/^\s*</, false)) return "typeName";
+      if (standardModules.has(word) && stream.match(/^\s*\./, false)) return "namespace";
       if (typeNames.has(word)) return "typeName";
       if (builtins.has(word)) return "function";
-      if (standardModules.has(word) && stream.peek() === ".") return "namespace";
       // A capitalised name is a user type by convention only; styling it as a
       // type is a display choice, not a claim about what the compiler resolved.
       if (/^[A-Z]/.test(word)) return "typeName";
