@@ -47,7 +47,13 @@ function invoke(request: Record<string, unknown>): CompilerResponse {
   }
 }
 
-const VALID = 'int add(int a, int b)\n    return a + b\n\nprint.line(add(2, 3))\n';
+const VALID = `int add(int a, b := int(3))
+    return a + b
+
+answer := add(2)
+answer = add(answer, b = 1)
+print.line(answer)
+`;
 
 describe.runIf(staged)("the real compiler, through the browser's own contract", () => {
   beforeAll(async () => {
@@ -122,7 +128,7 @@ print.line(tags.size())
 
   it("returns a structured diagnostic with a usable range", () => {
     const response = invoke({
-      schema_version: WASM_SCHEMA_VERSION, operation: "check", source: "int x = zzz\n",
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source: "int x := zzz\n",
     }) as CheckResponse;
     expect(response.valid).toBe(false);
     const [first] = response.diagnostics;
@@ -133,7 +139,7 @@ print.line(tags.size())
 
   it("formats, and reports a second format as unchanged", () => {
     const first = invoke({
-      schema_version: WASM_SCHEMA_VERSION, operation: "format", source: "int    x   =   1\n",
+      schema_version: WASM_SCHEMA_VERSION, operation: "format", source: "int    x   :=   1\n",
     }) as FormatResponse;
     expect(first.ok).toBe(true);
     expect(first.changed).toBe(true);
@@ -154,7 +160,7 @@ print.line(tags.size())
 
   it("refuses IR for a program that does not check, and says why", () => {
     const response = invoke({
-      schema_version: WASM_SCHEMA_VERSION, operation: "ir", source: "int x = zzz\n",
+      schema_version: WASM_SCHEMA_VERSION, operation: "ir", source: "int x := zzz\n",
     });
     expect(response.ok).toBe(false);
     if (response.ok) return;
@@ -234,7 +240,7 @@ print.line(tags.size())
   });
 
   it("turns a pathologically deep program into a diagnostic, not a trap", () => {
-    const deep = `int x = 1${" + 1".repeat(2000)}\n`;
+    const deep = `int x := 1${" + 1".repeat(2000)}\n`;
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "check", source: deep,
     }) as CheckResponse;
@@ -250,7 +256,7 @@ print.line(tags.size())
   });
 
   it("carries non-ASCII source across the boundary intact", () => {
-    const source = 'string s = "こんにちは 🌸"\nprint.line(s)\n';
+    const source = 'string s := "こんにちは 🌸"\nprint.line(s)\n';
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "format", source,
     }) as FormatResponse;

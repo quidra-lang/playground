@@ -36,8 +36,8 @@ const STORAGE_KEY = "quidra-playground/source";
 
 const SAMPLE = `// Quidra: maximum meaning per token.
 
-string name = "Quidra"
-int answer = 6 * 7
+name := "Quidra"
+int answer := 6 * 7
 print.line("Hello, {name}")
 print.line("answer = {answer}")
 `;

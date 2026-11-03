@@ -18,23 +18,29 @@ implemented by the frontend alone:
 
 There is still no second Quidra interpreter in this repository.
 
+On `develop`, `int count := 3` declares a binding with an explicit type and
+`name := "Quidra"` declares one with an inferred static type. Use `count = 4`
+to assign to the existing binding.
+
 ## Class initialization
 
 A class definition includes its creation arguments, even when the list is empty.
 Ordinary header arguments become fields. A `local` argument is used only during
 initialization; direct field assignments run in source order for each new value.
+Parameter defaults use `:=`, and named call arguments use `=`. A default with
+a unique static type can also supply an omitted parameter type.
 Methods use bare member names. The optional self name gives an explicit name to
 the whole instance, while a typed method named `construct` is an ordinary method.
 
 ```quidra
-class Point(int x, int y, local int scale = 2)
+class Point(int x, int y, local int scale := 2)
     x = x * scale
     y = y * scale
 
     int sum()
         return x + y
 
-Point point = Point(3, 4)
+Point point := Point(3, 4)
 print.line(point.sum())
 ```
 

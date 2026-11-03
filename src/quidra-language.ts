@@ -140,7 +140,7 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
     if (stream.match(/^([<>]:|:[<>])/)) return "punctuation";
 
     // Operators that carry one stable job each.
-    if (stream.match(/^(==|!=|<=|>=|\+=|-=|\*=|\/=|%=|<<|>>)/)) return "operator";
+    if (stream.match(/^(:=|==|!=|<=|>=|\+=|-=|\*=|\/=|%=|<<|>>)/)) return "operator";
     if (stream.match(/^[+\-*/%^=<>]/)) return "operator";
     if (stream.match(/^[|]/)) return "punctuation";
     if (stream.match(/^[&]/)) return "punctuation";

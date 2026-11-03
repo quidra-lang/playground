@@ -113,6 +113,10 @@ describe("compiler output never becomes markup", () => {
 
 
 describe("syntax highlighting follows Core lexical contracts", () => {
+  it("recognizes the declaration initializer as one operator", () => {
+    expect(languageTs).toMatch(/stream\.match\(\/\^\([^\n]*:=.*return "operator"/);
+  });
+
   it("does not invent numeric separators or integer exponent notation", () => {
     expect(languageTs).not.toContain("[0-9_]");
     expect(languageTs).toContain("let hasDecimalPoint = false");
