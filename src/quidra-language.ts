@@ -119,6 +119,7 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
       const word = stream.current();
 
       if (word === "true" || word === "false") return "bool";
+      if (word === "inf") return "number";
       // AND / OR / XOR / NOT are fixed-width integer bit operations and read
       // as operators, not as the boolean keywords they shadow in lowercase.
       if (word === word.toUpperCase() && keywords.has(word)) return "operator";

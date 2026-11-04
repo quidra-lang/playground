@@ -67,7 +67,7 @@ describe("version synchronisation", () => {
     }
   });
 
-  it.runIf(existsSync(generatedTokensPath))("derives collection type and namespace names from Core", () => {
+  it.runIf(existsSync(generatedTokensPath))("derives generic type and namespace names from Core", () => {
     const source = readFileSync(generatedTokensPath, "utf8");
     const typesJson = /export const TYPE_NAMES: readonly string\[\] = (.+);/.exec(source)?.[1];
     const modulesJson = /export const STANDARD_MODULES: readonly string\[\] = (.+);/.exec(source)?.[1];
@@ -75,6 +75,8 @@ describe("version synchronisation", () => {
     expect(modulesJson).toBeDefined();
     const types = JSON.parse(typesJson!) as string[];
     const modules = JSON.parse(modulesJson!) as string[];
+    expect(types).toContain("func");
+    expect(types).toContain("tensor");
     expect(types).toContain("map");
     expect(types).toContain("distinct");
     expect(modules).toContain("map");

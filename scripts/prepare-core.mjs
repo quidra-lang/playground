@@ -125,9 +125,9 @@ function extractManifestLists(coreDir) {
   const manifest = JSON.parse(readFileSync(join(coreDir, "quidra.manifest.json"), "utf8"));
   const clean = (entries) =>
     [...new Set((entries ?? []).map((entry) => String(entry).split(" ")[0].trim()).filter(Boolean))];
-  const types = clean(manifest.current_types).map((type) =>
-    /^(?:func|fn|map|distinct)</.test(type) ? type.slice(0, type.indexOf("<")) : type,
-  );
+  const types = [...new Set(clean(manifest.current_types).map((type) =>
+    /^(?:func|fn|tensor|map|distinct)</.test(type) ? type.slice(0, type.indexOf("<")) : type,
+  ))];
   const builtins = clean(manifest.current_builtins);
   const modules = clean(manifest.standard_modules);
   if (types.length === 0 || builtins.length === 0 || modules.length === 0) {
