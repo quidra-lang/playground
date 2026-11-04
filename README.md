@@ -24,6 +24,22 @@ literals default to `int`, `real` and `com`; `nat` requires context. Use an
 explicit type for a different intended type, as in `nat count := 3` or
 `int32 answer := 6 * 7`. Use `count = 4` to assign to the existing binding.
 
+Use `for: i < 10` to declare a loop-local range variable with an inferred
+type; `for i < 10` reuses an existing variable. For collections, `for:`
+declares every written index while each element's `:=` or `=` independently
+declares or reuses that element binding. For example,
+`for: p := prices[i], int q := quantities[j]` declares both `i` and `j` as
+read-only `nat` positions in the same zip iteration. An array may omit its
+index with `[]`; all zipped lengths must agree before any element is visited.
+
+Tuple patterns infer value and reference types as well:
+
+```quidra
+pair := (3, "three")
+(number, word) := pair
+(&stored, &label) := &pair
+```
+
 Numeric operators choose the highest operand family (`nat < int < real < com`),
 then the widest type within that family alone; arbitrary precision wins within
 its own family. For example, `nat64 + int32` uses `int32`, and
@@ -42,6 +58,10 @@ the exact declared storage type.
 
 In a tensor shape, `nat H` captures an extent and `W := H * 2` derives
 another extent from it.
+Other numeric axis expressions, such as `{batch * 2, 224}`, evaluate once at
+their original type and convert only the result to `nat` with explicit-cast
+checks. Negative or fractional results fail; intermediate arithmetic keeps
+its original type.
 
 ## Class initialization
 
