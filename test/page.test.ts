@@ -57,9 +57,9 @@ describe("the page and the code agree", () => {
 });
 
 describe("the bundled example follows Core line output syntax", () => {
-  it("uses print.line rather than explicit newline calls", () => {
-    expect(mainTs).toContain('print.line("Hello, {name}")');
-    expect(mainTs).toContain('print.line("answer = {answer}")');
+  it("uses println rather than explicit newline calls", () => {
+    expect(mainTs).toContain('println("Hello, {name}")');
+    expect(mainTs).toContain('println("answer = {answer}")');
     expect(mainTs).not.toContain("print(NL)");
     expect(readme).not.toContain("print(NL)");
     expect(wasmTests).not.toContain("print(NL)");

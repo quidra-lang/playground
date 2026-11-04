@@ -44,7 +44,7 @@ class Point(int x, int y, local int scale := 2)
         return x + y
 
 point := Point(3, 4)
-print.line(point.sum())
+println(point.sum())
 ```
 
 The editor's keyword list is regenerated from the same Core revision as its
@@ -63,8 +63,8 @@ map<string, int> counts
 distinct<string> tags
 .tags.add("apple")
 .tags.add("apple")
-print.line(counts.has("apple"))
-print.line(tags.size())
+println(counts.has("apple"))
+println(tags.size())
 ```
 
 The map method `.counts.set(...)` does not reserve the name `set` for

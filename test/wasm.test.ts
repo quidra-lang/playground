@@ -55,8 +55,8 @@ string greet(label := "hello")
 
 answer := add(2)
 answer = add(answer, b = 1)
-print.line(answer)
-print.line(greet())
+println(answer)
+println(greet())
 
 tensor<real32>{nat H, W := H * 2} image := tensor.zeros([32, 64])
 `;
@@ -105,8 +105,8 @@ map<string, int> counts
 distinct<string> tags
 .tags.add("apple")
 .tags.add("apple")
-print.line(counts.has("apple"))
-print.line(tags.size())
+println(counts.has("apple"))
+println(tags.size())
 `;
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
@@ -121,8 +121,8 @@ print.line(tags.size())
 .counts.set("apple", 1)
 distinct <string> tags
 .tags.add("apple")
-print.line(counts.has("apple"))
-print.line(tags.size())
+println(counts.has("apple"))
+println(tags.size())
 `;
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
@@ -262,7 +262,7 @@ print.line(tags.size())
   });
 
   it("carries non-ASCII source across the boundary intact", () => {
-    const source = 's := "こんにちは 🌸"\nprint.line(s)\n';
+    const source = 's := "こんにちは 🌸"\nprintln(s)\n';
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION, operation: "format", source,
     }) as FormatResponse;

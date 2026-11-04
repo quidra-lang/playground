@@ -38,8 +38,8 @@ const SAMPLE = `// Quidra: maximum meaning per token.
 
 name := "Quidra"
 int answer := 6 * 7
-print.line("Hello, {name}")
-print.line("answer = {answer}")
+println("Hello, {name}")
+println("answer = {answer}")
 `;
 
 // --- tiny DOM helpers ------------------------------------------------------
