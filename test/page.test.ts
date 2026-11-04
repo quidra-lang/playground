@@ -57,6 +57,11 @@ describe("the page and the code agree", () => {
 });
 
 describe("the bundled example follows Core line output syntax", () => {
+  it("lets the integer expression determine the answer type", () => {
+    expect(mainTs).toContain("answer := 6 * 7");
+    expect(mainTs).not.toContain("int answer := 6 * 7");
+  });
+
   it("uses println rather than explicit newline calls", () => {
     expect(mainTs).toContain('println("Hello, {name}")');
     expect(mainTs).toContain('println("answer = {answer}")');

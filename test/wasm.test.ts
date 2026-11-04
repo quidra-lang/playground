@@ -96,6 +96,97 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
     expect(response.diagnostics).toEqual([]);
   });
 
+  it("defaults numeric literals and keeps contextual integer widths", () => {
+    const source = `integer := 5 + 6
+int integer_copy := integer
+fraction := 1.5
+real fraction_copy := fraction
+imaginary := 2.0i
+com imaginary_copy := imaginary
+nat natural := 5
+int32 narrow := 5 + 6
+contextual := narrow + 1
+int32 contextual_copy := contextual
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it("chooses widths only from the highest numeric family", () => {
+    const source = `nat64 unsigned := 5
+nat arbitrary_natural := 5
+int32 signed := 6
+mixed := unsigned + signed
+int32 mixed_copy := mixed
+int32 arbitrary_mixed := arbitrary_natural + signed
+int32 signed_copy := signed
+nat64 unsigned_copy := unsigned
+real16 half := 1.5
+real16 real_result := signed + half
+real16b bhalf := 1.5
+real32 half_result := half + bhalf
+real64 wide := 2.0
+com16 imaginary := 1.0i
+com16 complex_result := wide + imaginary
+bool ordered := signed < unsigned
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it("still requires explicit destination conversions in assignments", () => {
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION,
+      operation: "check",
+      source: "int32 integer := 5\nreal16 half := integer\n",
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(false);
+    expect(response.diagnostics.length).toBeGreaterThan(0);
+  });
+
+  it("converts numeric value arguments to a concrete parameter type", () => {
+    const source = `real32 echo(real32 value)
+    return value
+
+integer := 5
+nat natural := 6
+real32 from_integer := echo(integer)
+real32 from_natural := echo(natural)
+int integer_copy := integer
+nat natural_copy := natural
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it("rejects a writable numeric argument with a different storage type", () => {
+    const source = `void replace(real32 &value)
+    value = 1.0
+
+integer := 5
+replace(&integer)
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(false);
+    expect(response.diagnostics.some((diagnostic) => diagnostic.code === "TYPE_MISMATCH")).toBe(true);
+  });
+
   it("accepts concise collection types alongside a user-defined set function", () => {
     const source = `int set(int value)
     return value + 1

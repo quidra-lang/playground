@@ -19,8 +19,26 @@ implemented by the frontend alone:
 There is still no second Quidra interpreter in this repository.
 
 On `develop`, omit the type by default when the initializer determines it, as in
-`name := "Quidra"`. Use an explicit type when context is needed, as in
-`int count := 3`. Use `count = 4` to assign to the existing binding.
+`name := "Quidra"` or `answer := 6 * 7`. Without a resolved context, numeric
+literals default to `int`, `real` and `com`; `nat` requires context. Use an
+explicit type for a different intended type, as in `nat count := 3` or
+`int32 answer := 6 * 7`. Use `count = 4` to assign to the existing binding.
+
+Numeric operators choose the highest operand family (`nat < int < real < com`),
+then the widest type within that family alone; arbitrary precision wins within
+its own family. For example, `nat64 + int32` uses `int32`, and
+`int32 + real16` uses `real16`. The incomparable `real16` and `real16b`
+formats join at `real32` (`com16` and `com16b` at `com32`). Operands convert
+before the operation with range checks and ordinary real/complex rounding.
+A value never widens the chosen type or changes an operand variable's type.
+Assignment still requires an explicit destination conversion when types differ.
+
+A numeric value passed to a concrete numeric parameter converts implicitly to
+the parameter type, with the same checks as an explicit cast. For example, a
+function with a `real32` parameter accepts an `int` or `nat` variable directly.
+Narrowing checks the range; real-to-integer conversion requires an integral
+value, and a scalar can convert to complex. A writable `&` argument requires
+the exact declared storage type.
 
 In a tensor shape, `nat H` captures an extent and `W := H * 2` derives
 another extent from it.
