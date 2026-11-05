@@ -96,6 +96,35 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
     expect(response.diagnostics).toEqual([]);
   });
 
+  it.each([
+    "3", "3.", "03.", ".0", ".2", ".02", "03.2", ":3", "03.2:3", "3:3",
+    "base=16", "base=16,upper",
+  ])("checks compact numeric interpolation with %s", (format) => {
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION,
+      operation: "check",
+      source: `value := 12345\nprintln("{value:${format}}")\n`,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it.each([
+    "03", "0", "0.", ".",
+    "int=3", "frac=2", "sig=3", "group=3", "zero",
+    "group=3,frac=2", "group=3,int=12,zero",
+  ])("rejects invalid or abolished numeric interpolation option %s", (format) => {
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION,
+      operation: "check",
+      source: `value := 12345\nprintln("{value:${format}}")\n`,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(false);
+    expect(response.diagnostics.length).toBeGreaterThan(0);
+  });
+
   it("defaults numeric literals and keeps contextual integer widths", () => {
     const source = `integer := 5 + 6
 int integer_copy := integer

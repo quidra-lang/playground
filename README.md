@@ -88,6 +88,25 @@ println(point.sum())
 The editor's keyword list is regenerated from the same Core revision as its
 WebAssembly frontend; class headers are interpreted by that frontend.
 
+## Numeric interpolation on develop
+
+Numeric interpolation uses compact digit specifications:
+
+| Form | Meaning |
+| --- | --- |
+| `{x:3}` | Three significant digits |
+| `{x:3.}` | At least three integer digits, padded with spaces; fractional digits unchanged |
+| `{x:03.}` | At least three integer digits, padded with zeros; fractional digits unchanged |
+| `{x:.2}` | Exactly two fractional digits (`{x:.02}` is an alias) |
+| `{x:03.2}` | At least three zero-padded integer digits and exactly two fractional digits |
+| `{x::3}` | Group digits in threes |
+| `{x:03.2:3}` | Combine integer padding, fractional digits and grouping |
+| `{x:3:3}` | Combine significant digits and grouping |
+
+The former decimal options `int=N`, `frac=N`, `sig=N`, `group=N` and `zero`
+are no longer accepted. Integer-base formatting remains `{x:base=16}` or
+`{x:base=16,upper}`.
+
 ## Collections on develop
 
 The Playground's `develop` build uses the matching Core `develop` syntax.
