@@ -96,6 +96,26 @@ describe.runIf(staged)("the real compiler, through the browser's own contract", 
     expect(response.diagnostics).toEqual([]);
   });
 
+  it("checks type-call conversions and length members", () => {
+    const source = `int | error parse_and_measure(string input)
+    value := try int(input)
+    bits := try bin("101")
+    string decimal := string(value)
+    string hexadecimal := value.B16
+    nat characters := decimal.len()
+    nat bit_count := bits.len()
+    nat elements := [value].len()
+    println("{decimal}, {hexadecimal}, {characters}, {bit_count}, {elements}")
+    return value
+`;
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
   it.each([
     "3", "3.", "03.", ".0", ".2", ".02", "03.2", ":3", "03.2:3", "3:3",
     "base=16", "base=16,upper",

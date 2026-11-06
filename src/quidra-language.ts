@@ -130,6 +130,10 @@ export const quidraLanguage = StreamLanguage.define<QuidraState>({
       if (standardModules.has(word) && stream.match(/^\s*\./, false)) return "namespace";
       if (typeNames.has(word)) return "typeName";
       if (builtins.has(word)) return "function";
+      // An uppercase radix member is a property, not a user type.
+      if (/^[bB](?:[2-9]|[12][0-9]|3[0-6])$/.test(word) &&
+          /\.\s*$/.test(stream.string.slice(0, stream.start)) &&
+          !stream.match(/^\s*\(/, false)) return "propertyName";
       // A capitalised name is a user type by convention only; styling it as a
       // type is a display choice, not a claim about what the compiler resolved.
       if (/^[A-Z]/.test(word)) return "typeName";

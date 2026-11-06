@@ -88,6 +88,14 @@ println(point.sum())
 The editor's keyword list is regenerated from the same Core revision as its
 WebAssembly frontend; class headers are interpreted by that frontend.
 
+## Text conversion on develop
+
+Parse numeric text and bit patterns with type calls such as `int(text)`,
+`real32(text)` and `bin(text)`. These return `T | error`; use `try` to
+propagate a parse error or `match` to handle it. Use `string(value)` for the
+standard text of a number, `bool`, `bin`, `error` or printable union. A
+`string` input keeps its text.
+
 ## Numeric interpolation on develop
 
 Numeric interpolation uses compact digit specifications:
@@ -113,9 +121,11 @@ letters, and uppercase `B` selects uppercase letters: `255.b16` is `"ff"`
 and `255.B16` is `"FF"`. Use `{n.b2}`, `{n.b8}` or `{n.B16}` directly
 inside interpolation. These members preserve a negative sign, render zero as
 `"0"`, and add no base prefix or padding; write `(-255).b16` for `"-ff"`.
-The existing `.string(base = 16, uppercase = true)` conversion remains valid.
 
 ## Collections on develop
+
+Use `value.len()` to get a `nat` length: elements for arrays, Unicode code
+points for strings, and bits for `bin` values.
 
 The Playground's `develop` build uses the matching Core `develop` syntax.
 Use `map<K, V>` for key/value associations and `distinct<T>` for unique
