@@ -107,6 +107,14 @@ The former decimal options `int=N`, `frac=N`, `sig=N`, `group=N` and `zero`
 are no longer accepted. Integer-base formatting remains `{x:base=16}` or
 `{x:base=16,upper}`.
 
+All integer types also provide string members `.b2` through `.b36` and
+`.B2` through `.B36`, without parentheses. Lowercase `b` selects lowercase
+letters, and uppercase `B` selects uppercase letters: `255.b16` is `"ff"`
+and `255.B16` is `"FF"`. Use `{n.b2}`, `{n.b8}` or `{n.B16}` directly
+inside interpolation. These members preserve a negative sign, render zero as
+`"0"`, and add no base prefix or padding; write `(-255).b16` for `"-ff"`.
+The existing `.string(base = 16, uppercase = true)` conversion remains valid.
+
 ## Collections on develop
 
 The Playground's `develop` build uses the matching Core `develop` syntax.
