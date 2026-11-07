@@ -191,15 +191,27 @@ bool ordered := signed < unsigned
     expect(response.diagnostics).toEqual([]);
   });
 
-  it("still requires explicit destination conversions in assignments", () => {
+  it("converts numeric declarations and assignments to the destination type", () => {
     const response = invoke({
       schema_version: WASM_SCHEMA_VERSION,
       operation: "check",
-      source: "int32 integer := 5\nreal16 half := integer\n",
+      source: "int32 integer := 5\nreal16 half := integer\nhalf = integer\nint64 widened := integer\n",
+    }) as CheckResponse;
+    expect(response.ok).toBe(true);
+    expect(response.valid).toBe(true);
+    expect(response.diagnostics).toEqual([]);
+  });
+
+  it.each([
+    "bool flag := true\nint number := flag\n",
+    "int number := 1\nbool flag := number\n",
+  ])("rejects implicit conversions between bool and numeric storage: %s", (source) => {
+    const response = invoke({
+      schema_version: WASM_SCHEMA_VERSION, operation: "check", source,
     }) as CheckResponse;
     expect(response.ok).toBe(true);
     expect(response.valid).toBe(false);
-    expect(response.diagnostics.length).toBeGreaterThan(0);
+    expect(response.diagnostics.some((diagnostic) => diagnostic.code === "TYPE_MISMATCH")).toBe(true);
   });
 
   it("converts numeric value arguments to a concrete parameter type", () => {
