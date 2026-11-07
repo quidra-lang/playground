@@ -143,7 +143,7 @@ describe("syntax highlighting follows Core lexical contracts", () => {
 
   it("keeps adjacent exclusive slice markers separate from comparisons", () => {
     expect(languageTs).toContain('stream.match(/^([<>]:|:[<>])/');
-    expect(languageTs).toContain('stream.match(/^[+\\-*/%^=<>]/)');
+    expect(languageTs).toContain('stream.match(/^[#+\\-*/%^=<>]/)');
   });
 
   it("distinguishes collection types and standard namespaces with optional whitespace", () => {

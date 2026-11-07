@@ -124,8 +124,13 @@ inside interpolation. These members preserve a negative sign, render zero as
 
 ## Collections on develop
 
-Use `value.len()` to get a `nat` length: elements for arrays, Unicode code
-points for strings, and bits for `bin` values.
+Use `#value` (equivalently `value.len()`) to get a `nat` length: outer elements
+for arrays, Unicode code points for strings, and bits for `bin` values.
+The shorthand also works automatically for user-defined/generic classes and
+visible extensions with a zero-argument-callable `len` method, preserving its
+return type, access, defaults, initialization, errors and mutation checks.
+`#matrix[0]` counts a row; `#values ^ 2` squares the length. Parenthesize a
+compound receiver as `#(left + right)`, or the result as `(#value).member`.
 
 The Playground's `develop` build uses the matching Core `develop` syntax.
 Use `map<K, V>` for key/value associations and `distinct<T>` for unique
