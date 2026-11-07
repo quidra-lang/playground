@@ -48,6 +48,13 @@ pair := (3, "three")
 (&stored, &label) := &pair
 ```
 
+Function values use `func<R(P...)>`, such as `func<int(int)>` for a function
+from `int` to `int`. Function types can nest in arrays, generic arguments,
+parameters and returns. A class can define a call operator as
+`T operator()()` or `T operator()(U value)`, and an index operator as
+`T operator[](K key)`. Use `value(args)` or `value[keys]` to call them.
+Index operators return ordinary values rather than writable storage.
+
 Numeric operators choose the highest operand family (`nat < int < real < com`),
 then the widest type within that family alone; arbitrary precision wins within
 its own family. For example, `nat64 + int32` uses `int32`, and
@@ -68,6 +75,25 @@ exact declared storage type.
 `bool` stays separate from numeric types. Conditions and `and`, `or`, and `not`
 require boolean operands; test an integer explicitly, for example `count != 0`.
 Numeric values also do not convert implicitly to boolean parameters or bindings.
+
+Postfix `n!` computes integer factorial, preserving the operand's `int` or
+`nat` type, including all fixed-width forms. `0!` is `1`; a negative operand
+fails with `FACTORIAL_DOMAIN`, and a fixed-width result outside its range
+fails with `INTEGER_OVERFLOW`. These failures are compile-time errors for
+statically evaluated operands and stop the operation for runtime operands.
+Factorial binds more tightly than exponentiation and unary minus:
+`2 ^ 3!` means `2 ^ (3!)`, and `-3!` means `-(3!)`.
+
+After `import math`, `a @ b` means `a.matmul(b)` and uses the Math package's
+supported types, shape checks, device placement and autograd behavior. Operands
+are evaluated once, left to right. `@` shares the precedence of `*`, `/` and
+`%` and groups left to right; tensor `*` remains elementwise.
+
+Math also provides `value.digits()` and `math.digits(value)`. Every integer
+type returns an `int[]` of decimal magnitude digits, from most significant to
+least significant: `98000.digits()` is `[9, 8, 0, 0, 0]`, zero gives `[0]`,
+and negative values use their absolute magnitude. Fixed-width signed minima
+and arbitrary-precision inputs are decomposed exactly.
 
 In a tensor shape, `nat H` captures an extent and `W := H * 2` derives
 another extent from it.
