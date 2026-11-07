@@ -47,14 +47,19 @@ its own family. For example, `nat64 + int32` uses `int32`, and
 formats join at `real32` (`com16` and `com16b` at `com32`). Operands convert
 before the operation with range checks and ordinary real/complex rounding.
 A value never widens the chosen type or changes an operand variable's type.
-Assignment still requires an explicit destination conversion when types differ.
 
-A numeric value passed to a concrete numeric parameter converts implicitly to
-the parameter type, with the same checks as an explicit cast. For example, a
-function with a `real32` parameter accepts an `int` or `nat` variable directly.
-Narrowing checks the range; real-to-integer conversion requires an integral
-value, and a scalar can convert to complex. A writable `&` argument requires
-the exact declared storage type.
+Numeric values convert implicitly to a numeric destination in initialized
+declarations, assignments, returns, parameter defaults, and value arguments,
+with the same checks as an explicit cast. For example, a `real32` binding or
+parameter accepts an `int` or `nat` variable directly. Narrowing checks the
+range; real-to-integer conversion requires an integral value, and a real or
+integer scalar can convert to complex. To convert complex values to real or
+integer, select a component explicitly. A writable `&` argument requires the
+exact declared storage type.
+
+`bool` stays separate from numeric types. Conditions and `and`, `or`, and `not`
+require boolean operands; test an integer explicitly, for example `count != 0`.
+Numeric values also do not convert implicitly to boolean parameters or bindings.
 
 In a tensor shape, `nat H` captures an extent and `W := H * 2` derives
 another extent from it.
