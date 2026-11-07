@@ -126,7 +126,7 @@ function extractManifestLists(coreDir) {
   const clean = (entries) =>
     [...new Set((entries ?? []).map((entry) => String(entry).split(" ")[0].trim()).filter(Boolean))];
   const types = [...new Set(clean(manifest.current_types).map((type) =>
-    /^(?:func|fn|tensor|map|distinct)</.test(type) ? type.slice(0, type.indexOf("<")) : type,
+    /^[A-Za-z_][A-Za-z0-9_]*</.test(type) ? type.slice(0, type.indexOf("<")) : type,
   ))];
   const builtins = clean(manifest.current_builtins);
   const modules = clean(manifest.standard_modules);

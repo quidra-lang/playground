@@ -32,6 +32,14 @@ declares or reuses that element binding. For example,
 read-only `nat` positions in the same zip iteration. An array may omit its
 index with `[]`; all zipped lengths must agree before any element is visited.
 
+User collections may return the standard borrowed `Iterator<T>` from an
+`iterator()` method, for example `Iterator<int> iterator()` returning
+`Iterator(&values)`. The constructor infers `T`, while type positions require
+explicit arguments. A single value loop `for value := collection[]` creates
+one iterator and advances it with `.it(&value)` through
+`bool .operator()(T &value)`, stopping on false. Each iterator has its own
+cursor; borrowed local source arrays cannot escape through returning iterators.
+
 Tuple patterns infer value and reference types as well:
 
 ```quidra
